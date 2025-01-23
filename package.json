@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "start-front": "cd quizzy-front && npm run start-custom",
+    "start-back": "cd quizzy-back && npm run start"
+  }
+}
