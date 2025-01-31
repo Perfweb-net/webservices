@@ -8,6 +8,6 @@
   "scripts": {
     "start": "docker compose up -d && echo 'DATABASE_URL : ' && symfony var:export DATABASE_URL && echo '\n' && symfony serve -d && symfony open:local",
     "stop": "symfony serve:stop && docker compose down",
-    "tableplus": "open \"$(symfony var:export DATABASE_URL)\""
+      "tableplus": "open \"$(symfony var:export DATABASE_URL)\""
   }
 }

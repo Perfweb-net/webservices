@@ -1,6 +1,6 @@
 export const environment = {
   baseUrl: 'http://localhost:3000',
-  apiUrl: 'http://localhost:3000/api',
+  apiUrl: 'http://localhost:8000/api',
   // You will need to create a Firebase project and replace the configuration here with yours
   firebase: {
     databaseURL: "https://quizzy-32f58-default-rtdb.europe-west1.firebasedatabase.app",
