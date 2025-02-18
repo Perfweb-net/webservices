@@ -38,7 +38,7 @@ final class FirebaseAuthService
    * 
    * @var string PUBLIC_KEY_URL
    */
-  private const string PUBLIC_KEY_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+  private const PUBLIC_KEY_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
   //#endregion
 
   //#region Constructeur

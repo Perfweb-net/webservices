@@ -125,6 +125,52 @@ class UserController extends AbstractController
       );
     }
   }
+
+  /**
+   * Méthode me
+   * 
+   * Router permettant de récupérer les informations 
+   * de l'utilisateur connecté.
+   * 
+   * @access public
+   * @since 1.0.0
+   * 
+   * @param Request $request Requête
+   * 
+   * @return JsonResponse Réponse JSON
+   */
+  #[Route(path: '/users/me', methods: ['GET'], name: 'me')]
+  public function me(Request $request): JsonResponse
+  {
+    $token = $this->firebaseAuthService->extractBearerToken(request: $request);
+    if (!$token) {
+      throw new UnauthorizedHttpException(
+        challenge: 'Bearer',
+        message: 'No valid token found'
+      );
+    }
+
+    $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
+    $userId = $decodedToken->sub;
+
+    $repository = $this->entityManager->getRepository(className: User::class);
+    $user = $repository->findOneBy(criteria: ['uid' => $userId]);
+
+    if (!$user) {
+      throw new UnauthorizedHttpException(
+        challenge: 'Bearer',
+        message: 'User not found'
+      );
+    }
+
+    return $this->json(
+      data: [
+        'uid' => $user->getUid(),
+        'username' => $user->getUsername(),
+        'email' => $decodedToken->email
+      ]
+    );
+  }
   //#endregion
 
   // #[Route('/api/users', methods: ['POST'])]
