@@ -97,7 +97,7 @@ class UserController extends AbstractController
 
       // Vérifier si l'utilisateur existe déjà
       $repository = $this->entityManager->getRepository(className: User::class);
-      $existingUser = $repository->findOneBy(criteria: ['uuid' => $userId]);
+      $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
 
       if ($existingUser) {
         throw new ConflictHttpException(
@@ -107,7 +107,7 @@ class UserController extends AbstractController
 
       // Enregistrer le nouvel utilisateur dans la base de données
       $user = new User();
-      $user->setUuid(uuid: $userId);
+      $user->setUid(uid: $userId);
       $user->setUsername(username: $userName);
 
       $this->entityManager->persist(object: $user);
@@ -126,7 +126,6 @@ class UserController extends AbstractController
     }
   }
   //#endregion
-
 
   // #[Route('/api/users', methods: ['POST'])]
   // public function registerUser(Request $request, EntityManagerInterface $entityManager): JsonResponse
@@ -189,7 +188,7 @@ class UserController extends AbstractController
 
   //     //save user in database
   //     $user = new User();
-  //     $user->setUuid($userId);
+  //     $user->setUid($userId);
   //     $user->setUsername($userName);
   //     $entityManager->persist($user);
   //     $entityManager->flush();

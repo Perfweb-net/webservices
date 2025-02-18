@@ -11,19 +11,19 @@ class User
 {
     #[ORM\Id]
     #[ORM\Column(length: 28, unique: true)]
-    private ?string $uuid = null;
+    private ?string $uid = null;
 
     #[ORM\Column(length: 255)]
     private ?string $username = null;
 
-    public function getUuid(): ?string
+    public function getUid(): ?string
     {
-        return $this->uuid;
+        return $this->uid;
     }
 
-    public function setUuid(string $uuid): static
+    public function setUid(string $uid): static
     {
-        $this->uuid = $uuid;
+        $this->uid = $uid;
 
         return $this;
     }

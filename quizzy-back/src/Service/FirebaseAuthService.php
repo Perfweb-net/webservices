@@ -4,8 +4,6 @@ namespace App\Service;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
