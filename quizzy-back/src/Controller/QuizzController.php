@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class QuizzController extends AbstractController
@@ -22,10 +23,24 @@ class QuizzController extends AbstractController
     ) {}
 
     #[Route('/api/quiz', methods: ['POST'])]
-    public function CreateQuiz(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, ): JsonResponse
+    public function CreateQuiz(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserRepository $userRepository ): JsonResponse
     {
-        $title = $request->query->get('title');
-        $description = $request->query->get('description');
+        $token = $this->firebaseAuthService->extractBearerToken(request: $request);
+        if (!$token) {
+            throw new UnauthorizedHttpException(
+                challenge: 'Bearer',
+                message: 'No valid token found'
+            );
+        }
+
+        $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
+        $userUid = $decodedToken->sub;
+
+        $user = $userRepository->find($userUid);
+
+        $params = json_decode($request->getContent(), true);
+        $title = $params['title'];
+        $description = $params['description'];
 
         if (!$title || !$description) {
             return new JsonResponse(['error' => 'Missing parameters'], 400);
@@ -34,6 +49,7 @@ class QuizzController extends AbstractController
         $quiz = new Quiz();
         $quiz->setTitle($title);
         $quiz->setDescription($description);
+        $quiz->setOwner($user);
 
         $errors = $validator->validate($quiz);
 
@@ -48,12 +64,12 @@ class QuizzController extends AbstractController
         $entityManager->persist($quiz);
         $entityManager->flush();
 
-        $quizUrl = $this->generateUrl('get_quiz', ['id' => $quiz->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $quizUrl = $this->generateUrl('getQuiz', ['id' => $quiz->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
         return new JsonResponse(null, 201, ['Location' => $quizUrl]);
     }
 
-    #[Route('/api/quiz', methods: ['GET'])]
+    #[Route('/api/quiz', name: 'getUserQuiz', methods: ['GET'])]
     public function GetUserQuiz(Request $request, QuizRepository $quizRepository, UserRepository $userRepository): JsonResponse
     {
         $token = $this->firebaseAuthService->extractBearerToken(request: $request);
@@ -67,18 +83,12 @@ class QuizzController extends AbstractController
         $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
         $userUid = $decodedToken->sub;
 
-        $quizzes = $userRepository->find($userUid);
+        $user = $userRepository->find($userUid);
 
-        $quizzes = $quizzes->getQuizzes();
+        $quizzes = $user->getQuizzes();
 
-        dd($quizzes);
         $formattedQuizzes = [];
 
-        foreach ($quizzes as $quiz) {
-            dd("toto");
-        }
-
-        dd("die");
         foreach ($quizzes as $quiz) {
             $formattedQuizzes[] = [
                 'id' => $quiz->getId(),
@@ -86,10 +96,6 @@ class QuizzController extends AbstractController
             ];
         }
 
-        dd($formattedQuizzes);
-
-
-
-        return new JsonResponse(['data' => $formattedQuizzes], 201);
+        return new JsonResponse(['data' => $formattedQuizzes], 200);
     }
 }
