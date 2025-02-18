@@ -10,20 +10,20 @@ use Doctrine\ORM\Mapping as ORM;
 class User
 {
     #[ORM\Id]
-    #[ORM\Column(length: 28)]
-    private ?string $Uuid = null;
+    #[ORM\Column(length: 28, unique: true)]
+    private ?string $uuid = null;
 
     #[ORM\Column(length: 255)]
     private ?string $username = null;
 
     public function getUuid(): ?string
     {
-        return $this->Uuid;
+        return $this->uuid;
     }
 
-    public function setUuid(string $Uuid): static
+    public function setUuid(string $uuid): static
     {
-        $this->Uuid = $Uuid;
+        $this->uuid = $uuid;
 
         return $this;
     }
