@@ -37,9 +37,6 @@ class Quiz
   #[Groups(['quiz:read', 'quiz:write'])]
   private ?string $description = null;
 
-  /**
-   * @var Collection<int, Question>
-   */
   #[ORM\OneToMany(targetEntity: Question::class, mappedBy: 'quiz', orphanRemoval: true)]
   private Collection $questions;
 

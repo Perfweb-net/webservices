@@ -36,25 +36,12 @@ class Question
   private ?Quiz $quiz = null;
 
   #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]
-  #[Assert\Count(
-    min: 2,
-    minMessage: 'The question must have at least {{ limit }} answers'
-  )]
   #[Groups(['question:read'])]
   private Collection $answers;
 
   public function __construct()
   {
     $this->answers = new ArrayCollection();
-  }
-
-  public function validateAtLeastOneCorrectAnswer(): void
-  {
-    $correctAnswers = $this->answers->filter(fn (Answer $answer): bool|null => $answer->isCorrect());
-
-    if ($correctAnswers->isEmpty()) {
-      throw new InvalidArgumentException('The question must have at least one correct answer');
-    }
   }
 
   public function getId(): ?int
