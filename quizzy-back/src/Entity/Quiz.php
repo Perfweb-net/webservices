@@ -43,6 +43,10 @@ class Quiz
   #[ORM\OneToMany(targetEntity: Question::class, mappedBy: 'quiz', orphanRemoval: true)]
   private Collection $questions;
 
+  #[ORM\ManyToOne(inversedBy: 'quizzes')]
+  #[ORM\JoinColumn(nullable: false)]
+  private ?User $owner = null;
+
   public function __construct()
   {
       $this->questions = new ArrayCollection();
@@ -103,6 +107,18 @@ class Quiz
               $question->setQuiz(null);
           }
       }
+
+      return $this;
+  }
+
+  public function getOwner(): ?User
+  {
+      return $this->owner;
+  }
+
+  public function setOwner(?User $owner): static
+  {
+      $this->owner = $owner;
 
       return $this;
   }
