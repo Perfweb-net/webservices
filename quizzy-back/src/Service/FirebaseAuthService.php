@@ -8,8 +8,10 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -56,7 +58,8 @@ final class FirebaseAuthService
   public function __construct(
     private readonly HttpClientInterface $httpClient,
     private readonly CacheInterface $cache
-  ) {}
+  ) {
+  }
   //#endregion
 
   //#region Méthodes
@@ -78,15 +81,36 @@ final class FirebaseAuthService
       $response = $this->httpClient->request(method: 'GET', url: self::PUBLIC_KEY_URL);
       $statusCode = $response->getStatusCode();
       if ($statusCode !== 200) {
-          throw new RuntimeException(message: "Erreur lors de la récupération des clés publiques, code HTTP : $statusCode");
+        throw new RuntimeException(message: "Erreur lors de la récupération des clés publiques, code HTTP : $statusCode");
       }
       return $response->toArray();
-    } catch (GuzzleException $exception) {
+    } catch (HttpExceptionInterface $exception) {
       throw new RuntimeException(
         message: "Impossible de récupérer les clés publiques: {$exception->getMessage()}",
         previous: $exception
       );
     }
+  }
+
+  /**
+   * Méthode extractBearerToken
+   * 
+   * Extrait le token Bearer
+   * 
+   * @access public
+   * @since 1.0.0
+   * 
+   * @param Request $request Requête
+   * 
+   * @return string|null Token Bearer
+   */
+  public function extractBearerToken(Request $request): ?string
+  {
+    $authHeader = $request->headers->get('Authorization');
+    if ($authHeader && preg_match('/^Bearer\s(\S+)$/', $authHeader, $matches)) {
+      return $matches[1];
+    }
+    return null;
   }
 
   /**
@@ -126,12 +150,12 @@ final class FirebaseAuthService
   {
     $segments = explode('.', $token);
     if (count(value: $segments) !== 3) {
-        throw new InvalidArgumentException(message: 'Invalid token format');
+      throw new InvalidArgumentException(message: 'Invalid token format');
     }
 
     $header = json_decode(base64_decode(strtr($segments[0], '-_', '+/')), true);
     if (!isset($header['kid'])) {
-        throw new InvalidArgumentException(message: 'Key ID (kid) not found in the token header');
+      throw new InvalidArgumentException(message: 'Key ID (kid) not found in the token header');
     }
 
     return $header['kid'];
@@ -157,13 +181,13 @@ final class FirebaseAuthService
     $kid = $this->extractKeyId(token: $token);
 
     if (!isset($keys[$kid])) {
-        throw new RuntimeException(message: 'Public key not found for the provided kid');
+      throw new RuntimeException(message: 'Public key not found for the provided kid');
     }
 
     return JWT::decode(
-      jwt: $token, 
+      jwt: $token,
       keyOrKeyArray: new Key(
-        keyMaterial: $keys[$kid], 
+        keyMaterial: $keys[$kid],
         algorithm: 'RS256'
       )
     );

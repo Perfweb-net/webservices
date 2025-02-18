@@ -8,6 +8,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -72,24 +75,20 @@ class UserController extends AbstractController
     $userName = $data['username'] ?? null;
 
     if (!$userName) {
-      return $this->json(
-        data: ['error' => 'Username is required'],
-        status: Response::HTTP_BAD_REQUEST
+      throw new BadRequestHttpException(
+        message: 'Username is required'
       );
     }
-
-    $authHeader = $request->headers->get(key: 'Authorization');
-
-    if (!$authHeader || !preg_match('/^Bearer\s(\S+)$/', $authHeader, $matches)) {
-      return $this->json(
-        data: ['error' => 'No valid token found'],
-        status: Response::HTTP_UNAUTHORIZED
-      );
-    }
-
-    $token = $matches[1];
 
     try {
+      $token = $this->firebaseAuthService->extractBearerToken(request: $request);
+      if (!$token) {
+        throw new UnauthorizedHttpException(
+          challenge: 'Bearer',
+          message: 'No valid token found'
+        );
+      }
+
       // Utiliser le service pour vérifier le token
       $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
 
@@ -101,9 +100,8 @@ class UserController extends AbstractController
       $existingUser = $repository->findOneBy(criteria: ['uuid' => $userId]);
 
       if ($existingUser) {
-        return $this->json(
-          data: ['error' => 'User already exists'],
-          status: Response::HTTP_CONFLICT
+        throw new ConflictHttpException(
+          message: 'User already exists'
         );
       }
 
@@ -120,9 +118,10 @@ class UserController extends AbstractController
         status: Response::HTTP_CREATED
       );
     } catch (Exception $exception) {
-      return $this->json(
-        data: ['error' => 'Token decoding failed', 'message' => $exception->getMessage()],
-        status: Response::HTTP_UNAUTHORIZED
+      throw new UnauthorizedHttpException(
+        challenge: 'Bearer',
+        message: 'Token decoding failed',
+        previous: $exception
       );
     }
   }
