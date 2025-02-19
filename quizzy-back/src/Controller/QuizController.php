@@ -8,6 +8,7 @@ use App\Repository\UserRepository;
 use App\Service\FirebaseAuthService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -102,8 +103,25 @@ class QuizController extends AbstractController
   }
 
   #[Route(path: '/{id}', name: 'get_one', methods: ['GET'])]
-  public function getQuiz(): JsonResponse
+  public function getQuiz(Request $request, int $id): JsonResponse
   {
-    throw new NotImplementedException(message: 'Not implemented');
+      $user = $this->firebaseAuthService->getUserFromToken($request);
+      $quizzes = $user->getQuizzes();
+
+      foreach ($quizzes as $quiz) {
+          if ($quiz->getId() === $id) {
+              $quizData = $this->normalizer->normalize(
+                  $quiz,
+                  null,
+                  ['groups' => ['quiz:read', 'question:read']]
+              );
+
+              $quizData['questions'] = $quizData['questions'] ?? [];
+
+              return $this->json($quizData, Response::HTTP_OK);
+          }
+      }
+
+      throw new NotFoundHttpException("Quiz non trouvé.");
   }
 }
