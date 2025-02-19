@@ -154,7 +154,7 @@ class UserController extends AbstractController
     $userId = $decodedToken->sub;
 
     $repository = $this->entityManager->getRepository(className: User::class);
-    $user = $repository->findOneBy(criteria: ['uid' => $userId]);
+    $user = $repository->find(id: $userId);
 
     if (!$user) {
       throw new UnauthorizedHttpException(

@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: QuizRepository::class)]
@@ -15,6 +16,7 @@ class Quiz
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(groups: ['quiz:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: false)]
@@ -23,6 +25,7 @@ class Quiz
         max: 255,
         maxMessage: 'The title must be less than {{ limit }} characters'
     )]
+    #[Groups(groups: ['quiz:read'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: false)]
@@ -31,6 +34,7 @@ class Quiz
         max: 5000,
         maxMessage: 'The description must be less than {{ limit }} characters'
     )]
+    #[Groups(groups: ['quiz:read'])]
     private ?string $description = null;
 
     #[ORM\OneToMany(targetEntity: Question::class, mappedBy: 'quiz', orphanRemoval: true)]

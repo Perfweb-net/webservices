@@ -2,11 +2,15 @@
 
 namespace App\Service;
 
+use App\Entity\User;
+use App\Repository\UserRepository;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
@@ -51,10 +55,12 @@ final class FirebaseAuthService
    * @since 1.0.0
    * 
    * @param HttpClientInterface $httpClient Client HTTP
+   * @param UserRepository $userRepository Dépôt d'utilisateurs
    * @param CacheInterface $cache Cache
    */
   public function __construct(
     private readonly HttpClientInterface $httpClient,
+    private readonly UserRepository $userRepository,
     private readonly CacheInterface $cache
   ) {
   }
@@ -127,6 +133,44 @@ final class FirebaseAuthService
       $item->expiresAfter(time: 3600);
       return $this->fetchPublicKeys();
     });
+  }
+
+  /**
+   * Méthode getUserFromToken
+   * 
+   * Récupère l'utilisateur authentifié
+   * 
+   * @access public
+   * @since 1.0.0
+   * 
+   * @param Request $request Requête
+   * 
+   * @return User Utilisateur authentifié
+   * 
+   * @throws UnauthorizedHttpException Jetée si aucun token valide n'est trouvé
+   * @throws NotFoundHttpException Jetée si l'utilisateur n'est pas trouvé
+   */
+  public function getUserFromToken(Request $request): User {
+    $token = $this->extractBearerToken(request: $request);
+    if (!$token) {
+      throw new UnauthorizedHttpException(
+        challenge: 'Bearer',
+        message: 'No valid token found'
+      );
+    }
+
+    $decodedToken = $this->verifyToken(token: $token);
+    $userUid = $decodedToken->sub;
+
+    $user = $this->userRepository->find($userUid);
+    if (!$user instanceof User) {
+      throw new UnauthorizedHttpException(
+        challenge: 'Bearer',
+        message: 'User not found'
+      );
+    }
+
+    return $user;
   }
 
   /**
