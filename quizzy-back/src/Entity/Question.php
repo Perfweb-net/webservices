@@ -36,7 +36,7 @@ class Question
   private ?Quiz $quiz = null;
 
   #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]
-  #[Groups(['question:read'])]
+  #[Groups(['question:read', 'answer:read'])]
   private Collection $answers;
 
   public function __construct()
@@ -79,6 +79,12 @@ class Question
   public function getAnswers(): Collection
   {
     return $this->answers;
+  }
+
+  public function setAnswers(array $answers): static
+  {
+    $this->answers = new ArrayCollection($answers);
+    return $this;
   }
 
   public function addAnswer(Answer $answer): static

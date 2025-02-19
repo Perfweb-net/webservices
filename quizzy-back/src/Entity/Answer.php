@@ -20,6 +20,7 @@ class Answer
   #[ORM\Column(length: 255)]
   #[Assert\NotBlank(message: 'The title is required')]
   #[Assert\Length(max: 255, maxMessage: 'The title must be less than {{ limit }} characters')]
+  #[Groups(['answer:read'])]
   private ?string $title = null;
 
   #[ORM\Column(type: Types::BOOLEAN)]

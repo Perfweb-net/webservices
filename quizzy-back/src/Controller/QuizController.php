@@ -96,11 +96,55 @@ class QuizController extends AbstractController
         $quizzes = $this->normalizer->normalize(
             $user->getQuizzes(),
             null,
-            ['groups' => 'quiz:read']
+            ['groups' => ['quiz:read', 'answer:read']]
+        );
+
+        foreach ($quizzes as &$quiz) {
+            dump("toto", $quiz);
+
+            if (!empty($quiz['title']) && !empty($quiz['questions'])) {
+                $isValid = true;
+                foreach ($quiz['questions'] as $question) {
+                    if (empty($question['title']) || !isset($question['answers']) || !is_array($question['answers']) || count($question['answers']) < 2) {
+                        $isValid = false;
+                        break;
+                    }
+
+                    dump("toto", $isValid);
+
+                    $correctAnswers = array_filter(
+                        $question['answers'],
+                        fn($answer) => isset($answer['isCorrect']) && $answer['isCorrect']
+                    );
+
+                    dump("titi", $isValid);
+
+                    if (count($correctAnswers) !== 1) {
+                        $isValid = false;
+                        break;
+                    }
+                }
+                if ($isValid) {
+                    $quiz_starts_url = $this->generateUrl(
+                        route: 'quiz_start',
+                        parameters: ['id' => $quiz['id']],
+                        referenceType: UrlGeneratorInterface::ABSOLUTE_URL
+                    );
+                    $quiz['_links'] = ['start' => $quiz_starts_url];
+                }
+            }
+        }
+
+        $createUrl  = $this->generateUrl(
+            route: 'quiz_create',
+            referenceType: UrlGeneratorInterface::ABSOLUTE_URL
         );
 
         return $this->json(
-            data: ['data' => $quizzes],
+            data: [
+                'data' => $quizzes,
+                '_links' => ['create' => $createUrl]
+            ],
             status: Response::HTTP_OK
         );
     }
@@ -116,7 +160,7 @@ class QuizController extends AbstractController
                 $quizData = $this->normalizer->normalize(
                     $quiz,
                     null,
-                    ['groups' => ['quiz:read']]
+                    ['groups' => ['quiz:read', 'answer:read']]
                 );
 
                 $quizData['questions'] = $quizData['questions'] ?? [];
@@ -149,5 +193,10 @@ class QuizController extends AbstractController
         }
 
         return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+    }
+
+    #[Route(path: '/{id}/start', name: 'start', methods: ['POST'])]
+    public function startQuiz(Request $request, int $id): JsonResponse{
+        throw new NotImplementedException();
     }
 }
