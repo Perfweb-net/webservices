@@ -120,4 +120,19 @@ class Quiz
 
         return $this;
     }
+
+    public function isValid(): bool
+    {
+        if ($this->questions->isEmpty()) {
+            return false;
+        }
+
+        foreach ($this->questions as $question) {
+            if (!$question->isValid()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

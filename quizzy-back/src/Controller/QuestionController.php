@@ -5,160 +5,240 @@ namespace App\Controller;
 use App\Entity\Answer;
 use App\Entity\Question;
 use App\Entity\Quiz;
-use App\Entity\User;
 use App\Repository\AnswerRepository;
 use App\Repository\QuestionRepository;
-use App\Repository\QuizRepository;
-use App\Repository\UserRepository;
 use App\Service\FirebaseAuthService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
 
-#[Route(path: '/api/quiz/{id}', name: 'questions_')]
+/**
+ * Classe QuestionController
+ * 
+ * Contrôleur de gestion des questions
+ * 
+ * @package App\Controller
+ * @category Controller
+ * 
+ * @version 1.0.0
+ * 
+ * @author Pierre SAUGUES <pierre.saugues@ynov.com>
+ * @author Valentin FORTIN <valentin.fortin@ynov.com>
+ */
+#[Route(path: '/api/quiz/{quiz}', name: 'questions_')]
 class QuestionController extends AbstractController
 {
+    //#region Constructeur
+    /**
+     * Constructeur
+     * 
+     * Initialise les dépandances du contrôleur
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param FirebaseAuthService $firebaseAuthService Service d'authentification Firebase
+     * @param EntityManagerInterface $entityManager Interface d'entité
+     * @param NormalizerInterface $normalizer Interface de normalisation
+     * @param ValidatorInterface $validator Interface de validation
+     * @param QuestionRepository $questionRepository Dépôt de questions
+     * @param AnswerRepository $answerRepository Dépôt de réponses
+     */
     public function __construct(
-        private readonly FirebaseAuthService    $firebaseAuthService,
+        private readonly FirebaseAuthService $firebaseAuthService,
         private readonly EntityManagerInterface $entityManager,
-        private readonly NormalizerInterface    $normalizer,
-        private readonly ValidatorInterface     $validator,
-        private readonly QuestionRepository     $questionRepository,
-        private readonly AnswerRepository       $answerRepository,
-    ) {}
+        private readonly NormalizerInterface $normalizer,
+        private readonly ValidatorInterface $validator,
+        private readonly QuestionRepository $questionRepository,
+        private readonly AnswerRepository $answerRepository,
+    ) {
+    }
+    //#endregion
 
+    //#region Propriétés
+    /**
+     * Méthode addQuestions
+     * 
+     * Router permettant l'ajout de questions
+     * à un quiz.
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête
+     * @param Quiz $quiz Quiz
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
     #[Route(path: '/questions', name: 'add', methods: ["POST"])]
-    public function addQuestions(Request $request, int $id): JsonResponse
+    public function addQuestions(Request $request, Quiz $quiz): JsonResponse
     {
-        $user = $this->firebaseAuthService->getUserFromToken($request);
-        $quizzes = $user->getQuizzes();
-        $data = json_decode($request->getContent(), true);
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
-        if (is_array($data) && isset($data["title"])) {
-            foreach ($quizzes as $quiz) {
-                if ($quiz->getId() === $id) {
-                    $quesstion = new Question();
-                    $quesstion->setTitle($data["title"]);
-                    $quesstion->setQuiz($quiz);
+        if ($quiz->getOwner() !== $user) {
+            throw new AccessDeniedHttpException(message: 'You are not the owner of this quiz.');
+        }
 
-                    if (isset($data["answers"])) {
-                        foreach ($data["answers"] as $answer) {
-                            $answerNew = new Answer();
-                            if (isset($answer["isCorrect"])) {
-                                $answerNew->setIsCorrect($answer["isCorrect"]);
-                            }
-                            if (isset($answer["title"])) {
-                                $answerNew->setTitle($answer["title"]);
-                            }
-                            $answerNew->setQuestion($quesstion);
-                            $this->entityManager->persist($answerNew);
-                            $quesstion->addAnswer($answerNew);
-                        }
-                    }
-                    $this->entityManager->persist($quesstion);
-                    $this->entityManager->flush();
+        $data = json_decode(
+            json: $request->getContent(),
+            associative: true
+        );
 
-                    $quesstionUrl = $this->generateUrl(
-                        route: 'questions_get_one',
-                        parameters: ['id' => $id, 'question_id' => $quesstion->getId()],
-                        referenceType: UrlGeneratorInterface::ABSOLUTE_URL
-                    );
+        if (!is_array(value: $data) || !isset($data["title"])) {
+            throw new NotFoundHttpException(message: 'Question not found.');
+        }
 
-                    return $this->json(
-                        data: null,
-                        headers: ['Location' => $quesstionUrl],
-                        status: Response::HTTP_CREATED,
-                    );
-                }
+        $question = new Question();
+        $question->setTitle(title: $data["title"]);
+        $question->setQuiz(quiz: $quiz);
+
+        if (!empty($data["answers"])) {
+            foreach ($data["answers"] as $answer) {
+                $answerNew = (new Answer())
+                    ->setTitle(title: $answer["title"] ?? '')
+                    ->setIsCorrect(isCorrect: $answer["isCorrect"] ?? false)
+                    ->setQuestion(question: $question);
+
+                $this->entityManager->persist(object: $answerNew);
+
+                $question->addAnswer(answer: $answerNew);
             }
         }
 
-        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+        $this->entityManager->persist(object: $question);
+        $this->entityManager->flush();
+
+        $questionUrl = $this->generateUrl(
+            route: 'questions_get_one',
+            parameters: ['quiz' => $quiz->getId(), 'question' => $question->getId()],
+            referenceType: UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        return $this->json(
+            data: null,
+            headers: ['Location' => $questionUrl],
+            status: Response::HTTP_CREATED,
+        );
     }
 
-    #[Route(path: '/questions/{question_id}', name: 'edit', methods: ["PUT"])]
-    public function editQuestion(Request $request, int $id, int $question_id): JsonResponse
-    {
-        $user = $this->firebaseAuthService->getUserFromToken($request);
-        $quizzes = $user->getQuizzes();
-        $data = json_decode($request->getContent(), true);
-        if (is_array($data) && isset($data["title"])) {
-            foreach ($quizzes as $quiz) {
-                if ($quiz->getId() === $id) {
-                    $quesstion = $this->questionRepository->findOneById($question_id);
-                    $quesstion->setTitle($data["title"]);
-                    $quesstion->setQuiz($quiz);
+    /**
+     * Méthode putQuestion
+     * 
+     * Router permettant la modification d'une question
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête
+     * @param Quiz $quiz Quiz
+     * @param Question $question Question
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
+    #[Route(path: '/questions/{question}', name: 'put_one', methods: ["PUT"])]
+    public function putQuestion(
+        Request $request,
+        Quiz $quiz,
+        Question $question
+    ): JsonResponse {
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
-                    if (isset($data["answers"])) {
-                        $answersNew = [];
-                        foreach ($data["answers"] as $answer) {
-                            $answerNew = new Answer();
+        // Vérifier si l'utilisateur est le propriétaire du quiz
+        if (!$quiz->getOwner() === $user) {
+            throw new NotFoundHttpException(message: 'Question not found.');
+        }
 
-                            if (isset($answer["isCorrect"])) {
-                                $answerNew->setIsCorrect($answer["isCorrect"]);
-                            }
-                            if (isset($answer["title"])) {
-                                $answerNew->setTitle($answer["title"]);
-                            }
-                            $answerNew->setQuestion($quesstion);
-                            $this->entityManager->persist($answerNew);
+        // Vérifier si la question appartient au quiz
+        if ($question->getQuiz() !== $quiz) {
+            throw new AccessDeniedHttpException(message: 'The question does not belong to the quiz.');
+        }
 
-                            $answersNew[] = $answerNew;
-                        }
-                        $quesstion->setAnswers($answersNew);
-                    }
-                    $this->entityManager->persist($quesstion);
-                    $this->entityManager->flush();
+        $data = json_decode(
+            json: $request->getContent(),
+            associative: true
+        );
 
-                    $quesstionUrl = $this->generateUrl(
-                        route: 'questions_get_one',
-                        parameters: ['id' => $id, 'question_id' => $quesstion->getId()],
-                        referenceType: UrlGeneratorInterface::ABSOLUTE_URL
-                    );
+        // Vérifier si le titre est présent
+        if (!is_array(value: $data) || !isset($data["title"])) {
+            throw new BadRequestHttpException(message: 'Title is required.');
+        }
+        $question->setTitle(title: $data["title"]);
 
-                    return new JsonResponse(null, $request->isMethod("POST") ? Response::HTTP_CREATED : Response::HTTP_NO_CONTENT, ['Location' => $quesstionUrl]);
-                }
+        // Vérifier si les réponses sont présentes
+        if (!empty($data["answers"])) {
+            // Supprimer les réponses existantes
+            $question->getAnswers()->clear();
+
+            // Ajouter les nouvelles réponses
+            foreach ($data["answers"] as $answer) {
+                $answerNew = (new Answer())
+                    ->setTitle(title: $answer["title"] ?? '')
+                    ->setIsCorrect(isCorrect: $answer["isCorrect"] ?? false)
+                    ->setQuestion(question: $question);
+
+                $this->entityManager->persist(object: $answerNew);
+
+                $question->addAnswer(answer: $answerNew);
             }
         }
 
-        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+        $this->entityManager->flush();
+
+        return $this->json(
+            data: null,
+            status: Response::HTTP_OK,
+        );
     }
 
-    #[Route(path: '/questions/{question_id}', name: 'get_one', methods: ['GET'])]
-    public function getQuestion(Request $request, int $id, int $question_id): JsonResponse
-    {
-        $user = $this->firebaseAuthService->getUserFromToken($request);
-        $quizzes = $user->getQuizzes();
-        foreach ($quizzes as $quiz) {
-            if ($quiz->getId() === $id) {
-                $questions = $quiz->getQuestions();
+    /**
+     * Méthode getQuestion
+     * 
+     * Router permettant de récupérer une question
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête
+     * @param Quiz $quiz Quiz
+     * @param Question $question Question
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
+    #[Route(path: '/questions/{question}', name: 'get_one', methods: ['GET'])]
+    public function getQuestion(
+        Request $request,
+        Quiz $quiz,
+        Question $question
+    ): JsonResponse {
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
-                foreach ($questions as $question) {
-                    if ($question->getId() === $question_id) {
-
-                        $questionData = $this->normalizer->normalize(
-                            $question,
-                            null,
-                            ['groups' => ['question:read', 'answer:read']]
-                        );
-
-                        $questionData['answers'] = $questionData['answers'] ?? [];
-                        return $this->json($questionData, Response::HTTP_OK);
-                    }
-                }
-            }
+        if ($quiz->getOwner() !== $user) {
+            throw new NotFoundHttpException(message: 'Question not found.');
         }
 
-        throw new NotFoundHttpException("Question non trouvé.");
+        if ($question->getQuiz() !== $quiz) {
+            throw new AccessDeniedHttpException(message: 'The question does not belong to the quiz.');
+        }
+
+        $question = $this->normalizer->normalize(
+            $question,
+            null,
+            ['groups' => ['question:read']]
+        );
+
+        return $this->json(
+            data: $question,
+            status: Response::HTTP_OK,
+        );
     }
+    //#endregion
 }

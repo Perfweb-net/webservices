@@ -3,14 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Quiz;
-use App\Entity\User;
-use App\Repository\QuizRepository;
-use App\Repository\UserRepository;
 use App\Service\FirebaseAuthService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,18 +17,59 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
 
+/**
+ * Classe QuizController
+ * 
+ * Contrôleur de gestion des quiz
+ * 
+ * @package App\Controller
+ * @category Controller
+ * 
+ * @version 1.0.0
+ * 
+ * @author Pierre SAUGUES <pierre.saugues@ynov.com>
+ * @author Valentin FORTIN <valentin.fortin@ynov.com>
+ */
 #[Route(path: '/api/quiz', name: 'quiz_')]
 class QuizController extends AbstractController
 {
+    //#region Constructeur
+    /**
+     * Constructeur
+     * 
+     * Initialise les dépendances du contrôleur
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param FirebaseAuthService $firebaseAuthService Service d'authentification Firebase  
+     * @param EntityManagerInterface $entityManager Interface d'entité
+     * @param NormalizerInterface $normalizer Interface de normalisation
+     * @param ValidatorInterface $validator Interface de validation
+     */
     public function __construct(
-        private readonly FirebaseAuthService    $firebaseAuthService,
+        private readonly FirebaseAuthService $firebaseAuthService,
         private readonly EntityManagerInterface $entityManager,
-        private readonly NormalizerInterface    $normalizer,
-        private readonly ValidatorInterface     $validator,
-    )
-    {
+        private readonly NormalizerInterface $normalizer,
+        private readonly ValidatorInterface $validator,
+    ) {
     }
+    //#endregion
 
+    //#region Méthodes
+    /**
+     * Méthode createQuiz
+     * 
+     * Permet à l'utilisateur authentifié 
+     * de créer un quiz
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête HTTP
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
     #[Route(name: 'create', methods: ['POST'])]
     public function createQuiz(Request $request): JsonResponse
     {
@@ -77,7 +114,7 @@ class QuizController extends AbstractController
 
         $quizUrl = $this->generateUrl(
             route: 'quiz_get_one',
-            parameters: ['id' => $quiz->getId()],
+            parameters: ['quiz' => $quiz->getId()],
             referenceType: UrlGeneratorInterface::ABSOLUTE_URL
         );
 
@@ -88,115 +125,169 @@ class QuizController extends AbstractController
         );
     }
 
+    /**
+     * Méthode getUserQuizzes
+     * 
+     * Permet à l'utilisateur authentifié 
+     * de récupérer la liste de ses quiz
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête HTTP
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
     #[Route(name: 'me_get_all', methods: ['GET'])]
     public function getUserQuizzes(Request $request): JsonResponse
     {
         $user = $this->firebaseAuthService->getUserFromToken(request: $request);
+        $quizzes = $user->getQuizzes();
 
-        $quizzes = $this->normalizer->normalize(
-            $user->getQuizzes(),
+        // Normalisation des quizzes
+        $quizzesData = $this->normalizer->normalize(
+            $quizzes,
             null,
-            ['groups' => ['quiz:read', 'answer:read']]
+            ['groups' => ['quiz:read']]
         );
 
-        foreach ($quizzes as &$quiz) {
-            dump("toto", $quiz);
-
-            if (!empty($quiz['title']) && !empty($quiz['questions'])) {
-                $isValid = true;
-                foreach ($quiz['questions'] as $question) {
-                    if (empty($question['title']) || !isset($question['answers']) || !is_array($question['answers']) || count($question['answers']) < 2) {
-                        $isValid = false;
-                        break;
-                    }
-
-                    dump("toto", $isValid);
-
-                    $correctAnswers = array_filter(
-                        $question['answers'],
-                        fn($answer) => isset($answer['isCorrect']) && $answer['isCorrect']
-                    );
-
-                    dump("titi", $isValid);
-
-                    if (count($correctAnswers) !== 1) {
-                        $isValid = false;
-                        break;
-                    }
-                }
-                if ($isValid) {
-                    $quiz_starts_url = $this->generateUrl(
-                        route: 'quiz_start',
-                        parameters: ['id' => $quiz['id']],
-                        referenceType: UrlGeneratorInterface::ABSOLUTE_URL
-                    );
-                    $quiz['_links'] = ['start' => $quiz_starts_url];
-                }
+        // Ajout des liens uniquement pour les quizzes valides
+        foreach ($quizzes as $index => $quiz) {
+            if ($quiz->isValid()) {
+                $quizzesData[$index]['_links']['start'] = $this->generateUrl(
+                    route: 'quiz_start',
+                    parameters: ['quiz' => $quiz->getId()],
+                    referenceType: UrlGeneratorInterface::ABSOLUTE_URL
+                );
             }
         }
 
-        $createUrl  = $this->generateUrl(
+        $createUrl = $this->generateUrl(
             route: 'quiz_create',
             referenceType: UrlGeneratorInterface::ABSOLUTE_URL
         );
 
         return $this->json(
             data: [
-                'data' => $quizzes,
+                'data' => $quizzesData,
                 '_links' => ['create' => $createUrl]
             ],
             status: Response::HTTP_OK
         );
     }
 
-    #[Route(path: '/{id}', name: 'get_one', methods: ['GET'])]
-    public function getQuiz(Request $request, int $id): JsonResponse
-    {
-        $user = $this->firebaseAuthService->getUserFromToken($request);
-        $quizzes = $user->getQuizzes();
+    /**
+     * Méthode getQuiz
+     * 
+     * Permet à l'utilisateur authentifié 
+     * de récupérer un quiz
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête HTTP
+     * @param Quiz $quiz Quiz
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
+    #[Route(path: '/{quiz}', name: 'get_one', methods: ['GET'])]
+    public function getQuiz(
+        Request $request,
+        Quiz $quiz
+    ): JsonResponse {
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
-        foreach ($quizzes as $quiz) {
-            if ($quiz->getId() === $id) {
-                $quizData = $this->normalizer->normalize(
-                    $quiz,
-                    null,
-                    ['groups' => ['quiz:read', 'answer:read']]
-                );
-
-                $quizData['questions'] = $quizData['questions'] ?? [];
-
-                return $this->json($quizData, Response::HTTP_OK);
-            }
+        if ($quiz->getOwner() !== $user) {
+            throw new NotFoundHttpException(
+                message: 'Quiz not found'
+            );
         }
 
-        throw new NotFoundHttpException("Quiz non trouvé.");
+        $quiz = $this->normalizer->normalize(
+            $quiz,
+            null,
+            ['groups' => ['quiz:read', 'answer:read']]
+        );
+
+        return $this->json(
+            data: $quiz,
+            status: Response::HTTP_OK
+        );
     }
 
-    #[Route(path: '/{id}', name: 'patch_one', methods: ['PATCH'])]
-    public function patchQuiz(Request $request, int $id): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
+    /**
+     * Méthode patchQuiz
+     * 
+     * Permet à l'utilisateur authentifié
+     * de modifier un quiz
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête HTTP
+     * @param Quiz $quiz Quiz
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
+    #[Route(path: '/{quiz}', name: 'patch_one', methods: ['PATCH'])]
+    public function patchQuiz(
+        Request $request,
+        Quiz $quiz
+    ): JsonResponse {
+        $data = json_decode(
+            json: $request->getContent(),
+            associative: true
+        );
 
-        if (is_array($data) && isset($data[0]['op'], $data[0]['path'], $data[0]['value'])) {
-            $user = $this->firebaseAuthService->getUserFromToken($request);
-            $quizzes = $user->getQuizzes();
-
-            foreach ($quizzes as $quiz) {
-                if ($quiz->getId() === $id) {
-                    $quiz->setTitle($data[0]['value']);
-                    $this->entityManager->persist($quiz);
-                    $this->entityManager->flush();
-
-                    return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-                }
-            }
+        if (!is_array(value: $data) || !isset($data[0]['op'], $data[0]['path'], $data[0]['value'])) {
+            throw new BadRequestHttpException(
+                message: 'Invalid request body'
+            );
         }
 
-        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
+
+        if ($quiz->getOwner() !== $user) {
+            throw new NotFoundHttpException(
+                message: 'Quiz not found'
+            );
+        }
+
+        if ($data[0]['path'] === '/title' && $data[0]['op'] === 'replace') {
+            $quiz->setTitle(title: $data[0]['value']);
+            $this->entityManager->flush();
+
+            return $this->json(
+                data: null,
+                status: Response::HTTP_NO_CONTENT
+            );
+        }
+
+        return $this->json(
+            data: ['message' => 'Invalid request, the operation is not supported'],
+            status: Response::HTTP_BAD_REQUEST
+        );
     }
 
-    #[Route(path: '/{id}/start', name: 'start', methods: ['POST'])]
-    public function startQuiz(Request $request, int $id): JsonResponse{
-        throw new NotImplementedException();
+    /**
+     * Méthode startQuiz
+     * 
+     * Permet à l'utilisateur authentifié
+     * de démarrer un quiz
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @param Request $request Requête HTTP
+     * @param Quiz $quiz Quiz
+     * 
+     * @return JsonResponse Réponse HTTP
+     */
+    #[Route(path: '/{quiz}/start', name: 'start', methods: ['POST'])]
+    public function startQuiz(
+        Request $request,
+        Quiz $quiz
+    ): JsonResponse {
+        throw new NotImplementedException(message: 'Not implemented');
     }
 }
