@@ -16,7 +16,7 @@ class Quiz
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(groups: ['quiz:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: false)]
@@ -25,7 +25,7 @@ class Quiz
         max: 255,
         maxMessage: 'The title must be less than {{ limit }} characters'
     )]
-    #[Groups(groups: ['quiz:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: false)]
@@ -34,10 +34,11 @@ class Quiz
         max: 5000,
         maxMessage: 'The description must be less than {{ limit }} characters'
     )]
-    #[Groups(groups: ['quiz:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read'])]
     private ?string $description = null;
 
     #[ORM\OneToMany(targetEntity: Question::class, mappedBy: 'quiz', orphanRemoval: true)]
+    #[Groups(groups: ['quiz:read'])]
     private Collection $questions;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'quizzes')]

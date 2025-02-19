@@ -116,7 +116,7 @@ class QuizController extends AbstractController
                 $quizData = $this->normalizer->normalize(
                     $quiz,
                     null,
-                    ['groups' => ['quiz:read', 'question:read']]
+                    ['groups' => ['quiz:read']]
                 );
 
                 $quizData['questions'] = $quizData['questions'] ?? [];

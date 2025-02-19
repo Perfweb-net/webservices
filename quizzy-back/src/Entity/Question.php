@@ -32,7 +32,7 @@ class Question
 
   #[ORM\ManyToOne(inversedBy: 'questions')]
   #[ORM\JoinColumn(nullable: false)]
-  #[Groups(['question:read'])]
+  #[Groups([ 'question:read'])]
   private ?Quiz $quiz = null;
 
   #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]

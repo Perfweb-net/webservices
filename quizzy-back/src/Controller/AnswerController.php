@@ -35,7 +35,8 @@ class AnswerController extends AbstractController
     {
     }
 
-    #[Route(path: '/questions', name: 'add', methods: ['POST'])]
+    #[Route(path: '/questions/', name: 'add', methods: ["PUT", "POST"])]
+    #[Route(path: '/questions', name: 'add_bis', methods: ["PUT", "POST"])]
     public function addQuestions(Request $request, int $id): JsonResponse
     {
         $user = $this->firebaseAuthService->getUserFromToken($request);
@@ -95,7 +96,7 @@ class AnswerController extends AbstractController
                         $questionData = $this->normalizer->normalize(
                             $question,
                             null,
-                            ['groups' => ['question:read', 'answer:read', 'quiz:read']]
+                            ['groups' => ['question:read', 'answer:read']]
                         );
 
                         $questionData['answers'] = $questionData['answers'] ?? [];
