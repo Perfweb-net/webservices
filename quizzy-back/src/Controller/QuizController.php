@@ -45,7 +45,7 @@ class QuizController extends AbstractController
     }
 
     $description = $params['description'];
-    if (!$description) {
+    if ($description === null) {
       throw new BadRequestHttpException(message: 'Description is required');
     }
 

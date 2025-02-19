@@ -29,7 +29,7 @@ class Quiz
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: false)]
-    #[Assert\NotBlank(message: 'The description is required')]
+    #[Assert\NotNull(message: 'The description is required')]
     #[Assert\Length(
         max: 5000,
         maxMessage: 'The description must be less than {{ limit }} characters'
