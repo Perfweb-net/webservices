@@ -8,7 +8,22 @@ use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-abstract class BaseFirebaseE2ETestCase extends KernelTestCase
+/**
+ * Classe FirebaseTestCase
+ * @abstract
+ * 
+ * Cette classe permet de tester les 
+ * fonctionnalités Firebase et d'authentifier
+ * les requêtes HTTP.
+ * 
+ * @package App\Tests\E2E
+ * @category End-to-End Tests
+ * 
+ * @version 1.0.0
+ * 
+ * @author Valentin FORTIN <valentin.fortin@ynov.com>
+ */
+abstract class FirebaseTestCase extends KernelTestCase
 {
     //#region Constantes
     /**
@@ -87,6 +102,16 @@ abstract class BaseFirebaseE2ETestCase extends KernelTestCase
     //#endregion
 
     //#region Méthodes
+    /**
+     * Méthode setUp
+     * 
+     * Cette méthode est exécutée avant chaque test
+     * 
+     * @access public
+     * @since 1.0.0
+     * 
+     * @return void Ne retourne rien
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -98,22 +123,24 @@ abstract class BaseFirebaseE2ETestCase extends KernelTestCase
         
         $this->client = HttpClient::create();
 
+        // Vérification de la variable d'environnement FIREBASE_API_KEY
         $this->firebaseAPIKey = $_ENV['FIREBASE_API_KEY'] ?? '';
-        $this->firebaseTestEmail = $_ENV['FIREBASE_TEST_EMAIL'] ?? '';
-        $this->firebaseTestPassword = $_ENV['FIREBASE_TEST_PASSWORD'] ?? '';
-
         if (empty($this->firebaseAPIKey)) {
             throw new RuntimeException(
                 message: "Firebase API Key not found. Check .env file."
             );
         }
 
+        // Vérification des variables d'environnement FIREBASE_TEST_EMAIL
+        $this->firebaseTestEmail = $_ENV['FIREBASE_TEST_EMAIL'] ?? '';
         if (empty($this->firebaseTestEmail)) {
             throw new RuntimeException(
                 message: "Firebase Test Email not found. Check .env file."
             );
         }
 
+        // Vérification des variables d'environnement FIREBASE_TEST_PASSWORD
+        $this->firebaseTestPassword = $_ENV['FIREBASE_TEST_PASSWORD'] ?? '';
         if (empty($this->firebaseTestPassword)) {
             throw new RuntimeException(
                 message: "Firebase Test Password not found. Check .env file."
@@ -124,6 +151,16 @@ abstract class BaseFirebaseE2ETestCase extends KernelTestCase
         $this->firebaseToken = $this->fetchFirebaseToken();
     }
 
+    /**
+     * Méthode fetchFirebaseToken
+     * 
+     * Cette méthode permet de récupérer le token Firebase
+     * 
+     * @access private
+     * @since 1.0.0
+     * 
+     * @return string Token Firebase
+     */
     private function fetchFirebaseToken(): string
     {
         $response = $this->client->request('POST', "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={$this->firebaseAPIKey}", [

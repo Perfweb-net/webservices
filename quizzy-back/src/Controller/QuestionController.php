@@ -85,7 +85,9 @@ class QuestionController extends AbstractController
         $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
         if ($quiz->getOwner() !== $user) {
-            throw new AccessDeniedHttpException(message: 'You are not the owner of this quiz.');
+            throw new AccessDeniedHttpException(
+                message: 'You are not the owner of this quiz.'
+            );
         }
 
         $data = json_decode(
@@ -94,7 +96,9 @@ class QuestionController extends AbstractController
         );
 
         if (!is_array(value: $data) || !isset($data["title"])) {
-            throw new NotFoundHttpException(message: 'Question not found.');
+            throw new BadRequestHttpException(
+                message: 'Title is required.'
+            );
         }
 
         $question = new Question();
@@ -195,7 +199,7 @@ class QuestionController extends AbstractController
 
         return $this->json(
             data: null,
-            status: Response::HTTP_OK,
+            status: Response::HTTP_NO_CONTENT,
         );
     }
 

@@ -291,5 +291,6 @@ class QuizController extends AbstractController
 
         return new JsonResponse(null, Response::HTTP_CREATED, [
             'Location' => "/execution/{$executionId}"
-        ]);    }
+        ]);
+    }
 }
