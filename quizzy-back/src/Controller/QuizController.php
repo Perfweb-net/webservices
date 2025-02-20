@@ -15,7 +15,6 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
 
 /**
  * Classe QuizController
@@ -286,8 +285,11 @@ class QuizController extends AbstractController
     #[Route(path: '/{quiz}/start', name: 'start', methods: ['POST'])]
     public function startQuiz(
         Request $request,
-        Quiz $quiz
+        Quiz $quiz,
     ): JsonResponse {
-        throw new NotImplementedException(message: 'Not implemented');
-    }
+        $executionId = substr(md5(uniqid()), 0, 6);
+
+        return new JsonResponse(null, Response::HTTP_CREATED, [
+            'Location' => "/execution/{$executionId}"
+        ]);    }
 }
