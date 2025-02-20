@@ -2,6 +2,7 @@
 
 namespace App\Tests\E2E;
 
+use RuntimeException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -21,6 +22,32 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  */
 final class PingE2ETest extends KernelTestCase
 {
+    //#region Constantes
+    /**
+     * Constante BASE_URL
+     * 
+     * URL de base de l'application
+     * 
+     * @access private
+     * @since 1.0.0
+     * 
+     * @var string BASE_URL URL de base de l'application
+     */
+    private const BASE_URL = 'http://localhost:8000';
+
+    /**
+     * Constante PING_ENDPOINT
+     * 
+     * Point de terminaison du ping
+     * 
+     * @access private
+     * @since 1.0.0
+     * 
+     * @var string PING_ENDPOINT Point de terminaison du ping
+     */
+    private const PING_ENDPOINT = '/api/ping';
+    //#endregion
+
     //#region Méthodes
     /**
      * Méthode testPingEndpointE2E
@@ -36,10 +63,10 @@ final class PingE2ETest extends KernelTestCase
     public function testPingEndpointE2E(): void
     {
         $client = HttpClient::create();
-        
+
         $response = $client->request(
             method: 'GET', 
-            url: 'http://127.0.0.1:8000/api/ping'
+            url: self::BASE_URL . self::PING_ENDPOINT
         );
 
         $this->assertEquals(
