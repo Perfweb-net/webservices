@@ -2,6 +2,7 @@
 
 namespace App\Tests\E2E;
 
+use RuntimeException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -21,6 +22,32 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  */
 final class PingE2ETest extends KernelTestCase
 {
+    //#region Constantes
+    /**
+     * Constante BASE_URL
+     * 
+     * URL de base de l'application
+     * 
+     * @access private
+     * @since 1.0.0
+     * 
+     * @var string BASE_URL URL de base de l'application
+     */
+    private const BASE_URL = 'http://localhost:8000';
+
+    /**
+     * Constante PING_ENDPOINT
+     * 
+     * Point de terminaison du ping
+     * 
+     * @access private
+     * @since 1.0.0
+     * 
+     * @var string PING_ENDPOINT Point de terminaison du ping
+     */
+    private const PING_ENDPOINT = '/api/ping';
+    //#endregion
+
     //#region Méthodes
     /**
      * Méthode testPingEndpointE2E
@@ -36,17 +63,18 @@ final class PingE2ETest extends KernelTestCase
     public function testPingEndpointE2E(): void
     {
         $client = HttpClient::create();
-        
-        // Send a GET request to the actual Symfony server
+
         $response = $client->request(
             method: 'GET', 
-            url: 'http://127.0.0.1:8000/api/ping'
+            url: self::BASE_URL . self::PING_ENDPOINT
         );
 
-        // Check that the HTTP status is 200
-        $this->assertEquals(200, $response->getStatusCode(), 'Expected HTTP status 200, got ' . $response->getStatusCode());
+        $this->assertEquals(
+            expected: 200, 
+            actual: $response->getStatusCode(), 
+            message: "Expected status code 200, got {$response->getStatusCode()}"
+        );
 
-        // Ensure the response is valid JSON
         $json = json_decode(
             json: $response->getContent(), 
             associative: true
@@ -57,7 +85,6 @@ final class PingE2ETest extends KernelTestCase
             message: 'Response must be a valid JSON array'
         );
 
-        // Verify the JSON contains the expected keys
         $this->assertArrayHasKey(
             key: 'status',
             array: $json, 
@@ -69,7 +96,6 @@ final class PingE2ETest extends KernelTestCase
             message: "Missing 'database' key in the response"
         );
 
-        // Ensure database connection status is 'OK'
         $this->assertEquals(
             expected: 'OK', 
             actual: $json['status'], 
