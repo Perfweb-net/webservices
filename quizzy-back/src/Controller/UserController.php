@@ -15,9 +15,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-
 /**
  * Classe UserController
+ * @final
  * 
  * Contrôleur de gestion des utilisateurs
  * 
@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
 #[Route(path: '/api', name: 'user_')]
-class UserController extends AbstractController
+final class UserController extends AbstractController
 {
     //#region Constructeur
     /**
@@ -47,8 +47,7 @@ class UserController extends AbstractController
     public function __construct(
         private readonly FirebaseAuthService $firebaseAuthService,
         private readonly EntityManagerInterface $entityManager
-    ) {
-    }
+    ) {}
     //#endregion
 
     //#region Méthodes

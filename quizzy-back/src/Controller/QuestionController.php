@@ -23,6 +23,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * Classe QuestionController
+ * @final
  * 
  * Contrôleur de gestion des questions
  * 
@@ -35,7 +36,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
 #[Route(path: '/api/quiz/{quiz}', name: 'questions_')]
-class QuestionController extends AbstractController
+final class QuestionController extends AbstractController
 {
     //#region Constructeur
     /**

@@ -2,13 +2,6 @@
 
 namespace App\Tests\E2E;
 
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\EntityManagerInterface;
-use RuntimeException;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-
 /**
  * Classe QuizE2ETest
  * @final

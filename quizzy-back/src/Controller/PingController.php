@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Classe PingController
+ * @final
  * 
  * Contrôleur de gestion du ping
  * 
@@ -22,7 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
 #[Route(path: '/api', name: 'ping_')]
-class PingController extends AbstractController
+final class PingController extends AbstractController
 {
     /**
      * Méthode ping
