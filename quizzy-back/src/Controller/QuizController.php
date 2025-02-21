@@ -10,11 +10,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use OpenApi\Attributes as OA;
 
 /**
  * Classe QuizController
@@ -30,6 +32,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
+#[OA\Tag(name: 'Quiz')]
 #[Route(path: '/api/quiz', name: 'quiz_')]
 final class QuizController extends AbstractController
 {
@@ -190,6 +193,16 @@ final class QuizController extends AbstractController
      * 
      * @return JsonResponse Réponse HTTP
      */
+    #[OA\Parameter(
+        name: 'quiz',
+        in: 'path',
+        description: 'Quiz ID',
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Quiz found',
+    )]
     #[Route(path: '/{quiz}', name: 'get_one', methods: ['GET'])]
     public function getQuiz(
         Request $request,

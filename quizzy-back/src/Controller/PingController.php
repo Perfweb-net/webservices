@@ -7,6 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
 /**
  * Classe PingController
@@ -22,6 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
+#[OA\Tag(name: 'Ping')]
 #[Route(path: '/api', name: 'ping_')]
 final class PingController extends AbstractController
 {
@@ -39,6 +41,27 @@ final class PingController extends AbstractController
      * 
      * @return JsonResponse Réponse JSON
      */
+    #[OA\Response(
+        response: 200, 
+        description: 'API is available and database is connected',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(
+                    property: 'status', 
+                    type: 'string'
+                ),
+                new OA\Property(
+                    property: 'database', 
+                    type: 'string'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 500, 
+        description: 'API is available but database is not connected'
+    )]
     #[Route(path: '/ping', name: 'ping', methods: ['GET'])]
     public function ping(
         EntityManagerInterface $entityManager,

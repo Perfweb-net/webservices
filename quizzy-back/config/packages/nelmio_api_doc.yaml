@@ -1,8 +1,15 @@
 nelmio_api_doc:
     documentation:
+        components:
+            securitySchemes:
+                BearerAuth:
+                    type: http
+                    scheme: bearer
+        security:
+            - BearerAuth: []
         info:
-            title: My App
-            description: This is an awesome app!
+            title: Quizzy API
+            description: Quizzy API documentation
             version: 1.0.0
     areas: # to filter documented areas
         path_patterns:

@@ -20,6 +20,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use OpenApi\Attributes as OA;
 
 /**
  * Classe QuestionController
@@ -35,6 +36,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
+#[OA\Tag(name: 'Quiz Questions')]
 #[Route(path: '/api/quiz/{quiz}', name: 'questions_')]
 final class QuestionController extends AbstractController
 {

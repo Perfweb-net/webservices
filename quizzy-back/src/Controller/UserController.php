@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
 /**
  * Classe UserController
@@ -29,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
+#[OA\Tag(name: 'User')]
 #[Route(path: '/api', name: 'user_')]
 final class UserController extends AbstractController
 {
