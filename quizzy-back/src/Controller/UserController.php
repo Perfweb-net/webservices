@@ -110,50 +110,42 @@ final class UserController extends AbstractController
             );
         }
 
-        try {
-            $token = $this->firebaseAuthService->extractBearerToken(request: $request);
-            if (!$token) {
-                throw new UnauthorizedHttpException(
-                    challenge: 'Bearer',
-                    message: 'No valid token found'
-                );
-            }
-
-            // Utiliser le service pour vérifier le token
-            $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
-
-            // Extraire l'ID utilisateur
-            $userId = $decodedToken->sub;
-
-            // Vérifier si l'utilisateur existe déjà
-            $repository = $this->entityManager->getRepository(className: User::class);
-            $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
-
-            if ($existingUser) {
-                throw new ConflictHttpException(
-                    message: 'User already exists'
-                );
-            }
-
-            // Enregistrer le nouvel utilisateur dans la base de données
-            $user = new User();
-            $user->setUid(uid: $userId);
-            $user->setUsername(username: $userName);
-
-            $this->entityManager->persist(object: $user);
-            $this->entityManager->flush();
-
-            return $this->json(
-                data: ['message' => 'User registered successfully'],
-                status: Response::HTTP_CREATED
-            );
-        } catch (Exception $exception) {
+        $token = $this->firebaseAuthService->extractBearerToken(request: $request);
+        if (!$token) {
             throw new UnauthorizedHttpException(
                 challenge: 'Bearer',
-                message: 'Token decoding failed',
-                previous: $exception
+                message: 'No valid token found'
             );
         }
+
+        // Utiliser le service pour vérifier le token
+        $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
+
+        // Extraire l'ID utilisateur
+        $userId = $decodedToken->sub;
+
+        // Vérifier si l'utilisateur existe déjà
+        $repository = $this->entityManager->getRepository(className: User::class);
+        $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
+
+        if ($existingUser) {
+            throw new ConflictHttpException(
+                message: 'User already exists'
+            );
+        }
+
+        // Enregistrer le nouvel utilisateur dans la base de données
+        $user = new User();
+        $user->setUid(uid: $userId);
+        $user->setUsername(username: $userName);
+
+        $this->entityManager->persist(object: $user);
+        $this->entityManager->flush();
+
+        return $this->json(
+            data: ['message' => 'User registered successfully'],
+            status: Response::HTTP_CREATED
+        );
     }
 
     /**

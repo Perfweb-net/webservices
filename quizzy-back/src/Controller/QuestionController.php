@@ -89,6 +89,15 @@ final class QuestionController extends AbstractController
     #[OA\Post(
         summary: 'Add a question to a quiz',
         description: 'Add a question to a quiz',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                ref: new Model(
+                    type: Question::class, 
+                    groups: ['question:write']
+                )
+            )
+        ),
         responses: [
             new OA\Response(
                 response: 201,
@@ -104,7 +113,10 @@ final class QuestionController extends AbstractController
                         )
                     )
                 ],
-                content: new OA\JsonContent(ref: new Model(type: Question::class, groups: ['question:read']))
+                content: new OA\JsonContent(ref: new Model(
+                    type: Question::class, 
+                    groups: ['question:read']
+                ))
             ),
             new OA\Response(
                 response: 400,
@@ -187,6 +199,15 @@ final class QuestionController extends AbstractController
     #[OA\Put(
         summary: 'Update a question',
         description: 'Update a question',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                ref: new Model(
+                    type: Question::class, 
+                    groups: ['question:write']
+                )
+            )
+        ),
         responses: [
             new OA\Response(
                 response: 204,

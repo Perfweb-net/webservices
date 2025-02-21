@@ -30,7 +30,7 @@ class Question
         max: 255,
         maxMessage: 'The title must be less than {{ limit }} characters'
     )]
-    #[Groups(groups: ['quiz:read', 'question:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'question:write'])]
     private ?string $title = null;
 
     #[ORM\ManyToOne(inversedBy: 'questions')]
@@ -39,7 +39,7 @@ class Question
     private ?Quiz $quiz = null;
 
     #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]
-    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'question:write'])]
     private Collection $answers;
 
     public function __construct()
