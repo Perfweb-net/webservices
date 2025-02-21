@@ -159,7 +159,7 @@ final class QuizE2ETest extends FirebaseTestCase
             options: [
                 'json' => [
                     'title' => '',
-                    'description' => 'A simple test quiz'
+                    'description' => 123
                 ],
                 'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
             ]

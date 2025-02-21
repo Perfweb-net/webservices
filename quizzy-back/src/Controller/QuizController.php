@@ -111,13 +111,13 @@ final class QuizController extends AbstractController
             associative: true
         );
 
-        if (!isset($params['title'])) {
+        if (!isset($params['title']) || empty($params['title'])) {
             throw new BadRequestHttpException(message: 'Title is required');
         } else {
             $title = $params['title'];
         }
         
-        if (!isset($params['description']) || $params['description'] === null) {
+        if (!isset($params['description']) || empty($params['description'])) {
             throw new BadRequestHttpException(message: 'Description is required');
         } else {
             $description = $params['description'];
