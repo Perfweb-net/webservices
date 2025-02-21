@@ -3,14 +3,18 @@
 namespace App\Entity;
 
 use App\Repository\QuestionRepository;
-use App\Validator\AtLeastOneCorrectAnswer;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use InvalidArgumentException;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    title: 'Question', 
+    description: 'Question entity',
+    
+)]
 #[ORM\Entity(repositoryClass: QuestionRepository::class)]
 class Question
 {

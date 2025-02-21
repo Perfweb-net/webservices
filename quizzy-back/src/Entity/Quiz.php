@@ -9,7 +9,12 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    title: 'Quiz', 
+    description: 'Quiz entity'
+)]
 #[ORM\Entity(repositoryClass: QuizRepository::class)]
 class Quiz
 {

@@ -8,6 +8,7 @@ use App\Entity\Quiz;
 use App\Repository\AnswerRepository;
 use App\Repository\QuestionRepository;
 use App\Service\FirebaseAuthService;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -36,7 +37,10 @@ use OpenApi\Attributes as OA;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
-#[OA\Tag(name: 'Quiz Questions')]
+#[OA\Tag(
+    name: 'Quiz Questions',
+    description: 'Manage questions of a quiz',
+)]
 #[Route(path: '/api/quiz/{quiz}', name: 'questions_')]
 final class QuestionController extends AbstractController
 {
@@ -82,6 +86,35 @@ final class QuestionController extends AbstractController
      * 
      * @return JsonResponse Réponse HTTP
      */
+    #[OA\Post(
+        summary: 'Add a question to a quiz',
+        description: 'Add a question to a quiz',
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Question created',
+                headers: [
+                    new OA\Header(
+                        header: 'Location',
+                        description: 'Location of the created question',
+                        schema: new OA\Schema(
+                            type: 'string',
+                            format: 'uri',
+                            example: 'http://localhost:8000/api/quiz/1/questions/1'
+                        )
+                    )
+                ],
+                content: new OA\JsonContent(ref: new Model(type: Question::class, groups: ['question:read']))
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad request',
+                content: new OA\JsonContent(
+                    example: ['message' => 'Title is required.']
+                )
+            )
+        ]
+    )]
     #[Route(path: '/questions', name: 'add', methods: ["POST"])]
     public function addQuestions(Request $request, Quiz $quiz): JsonResponse
     {
@@ -151,6 +184,37 @@ final class QuestionController extends AbstractController
      * 
      * @return JsonResponse Réponse HTTP
      */
+    #[OA\Put(
+        summary: 'Update a question',
+        description: 'Update a question',
+        responses: [
+            new OA\Response(
+                response: 204,
+                description: 'Question updated'
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad request',
+                content: new OA\JsonContent(
+                    example: ['message' => 'Title is required.']
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Access denied',
+                content: new OA\JsonContent(
+                    example: ['message' => 'The question does not belong to the quiz.']
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Not found',
+                content: new OA\JsonContent(
+                    example: ['message' => 'Question not found.']
+                )
+            )
+        ]
+    )]
     #[Route(path: '/questions/{question}', name: 'put_one', methods: ["PUT"])]
     public function putQuestion(
         Request $request,
@@ -220,6 +284,31 @@ final class QuestionController extends AbstractController
      * 
      * @return JsonResponse Réponse HTTP
      */
+    #[OA\Get(
+        summary: 'Get a question',
+        description: 'Get a question',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Question found',
+                content: new OA\JsonContent(ref: new Model(type: Question::class, groups: ['question:read']))
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Access denied',
+                content: new OA\JsonContent(
+                    example: ['message' => 'The question does not belong to the quiz.']
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Not found',
+                content: new OA\JsonContent(
+                    example: ['message' => 'Question not found.']
+                )
+            )
+        ]
+    )]
     #[Route(path: '/questions/{question}', name: 'get_one', methods: ['GET'])]
     public function getQuestion(
         Request $request,

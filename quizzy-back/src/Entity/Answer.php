@@ -7,7 +7,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Attribute\Groups;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(title: 'Answer', description: 'Answer entity')]
 #[ORM\Entity(repositoryClass: AnswerRepository::class)]
 class Answer
 {
