@@ -66,6 +66,34 @@ final class UserController extends AbstractController
      * 
      * @return JsonResponse Réponse JSON
      */
+
+    #[OA\Post(
+        path: '/api/users',
+        summary: 'Créer un nouvel utilisateur',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'johndoe')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Utilisateur créé avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'User registered successfully')
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Données invalides'),
+            new OA\Response(response: 401, description: 'Authentification requise'),
+            new OA\Response(response: 409, description: 'Utilisateur déjà existant')
+        ]
+    )]
     #[Route(path: '/users', methods: ['POST'], name: 'register')]
     public function register(Request $request): JsonResponse
     {
@@ -141,6 +169,25 @@ final class UserController extends AbstractController
      * 
      * @return JsonResponse Réponse JSON
      */
+    #[OA\Get(
+        path: '/api/users/me',
+        summary: 'Obtenir les informations de l\'utilisateur connecté',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Détails de l\'utilisateur',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'uid', type: 'string', example: 'NKMbW78AGegabwXsEbmB1hCCOOr1'),
+                        new OA\Property(property: 'username', type: 'string', example: 'TestUser'),
+                        new OA\Property(property: 'email', type: 'string', example: 'test@test.com')
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Authentification requise'),
+            new OA\Response(response: 404, description: 'Utilisateur non trouvé')
+        ]
+    )]
     #[Route(path: '/users/me', methods: ['GET'], name: 'me')]
     public function me(Request $request): JsonResponse
     {
