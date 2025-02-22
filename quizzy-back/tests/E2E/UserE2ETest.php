@@ -2,69 +2,159 @@
 
 namespace App\Tests\E2E;
 
-use Symfony\Component\HttpFoundation\Response;
-
-class UserE2ETest extends FirebaseTestCase
-{
-private ?string $userId = null;
+use App\Entity\User;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
-* Test de l'enregistrement d'un utilisateur avec un token Firebase valide
-*/
-public function testRegisterUserWithValidToken(): void
+ * Classe UserE2ETest
+ * @final
+ *
+ * Cette classe permet de tester le
+ * contrôleur UserController.
+ *
+ * @package App\Tests\E2E
+ * @category End-to-End Tests
+ *
+ * @version 1.0.0
+ *
+ * @author ANGELA DUTON
+ * @author Pierre SAUGES <valentin.fortin@ynov.com>
+ */
+final class UserE2ETest extends FirebaseTestCase
 {
+//#region Constantes
+    /**
+     * Constante USER_ENDPOINT
+     *
+     * Chemin de l'API pour les
+     * utilisateurs
+     *
+     * @access private
+     * @since 1.0.0
+     *
+     * @var string USER_ENDPOINT Chemin de l'API pour les utilisateurs
+     */
+    private const USER_ENDPOINT = '/api/users';
+//#endregion
 
-$client = static::createClient();
+//#region Propriétés
+    /**
+     * Propriété userId
+     *
+     * Identifiant de l'utilisateur
+     *
+     * @access private
+     * @since 1.0.0
+     *
+     * @var string|null $userId Identifiant de l'utilisateur
+     */
+    private static ?string $userId = null;
+//#endregion
+
+//#region Méthodes
+    private $entityManager;
+    private $firebaseAuthService;
+
+    /**
+     * Méthode testRegisterUser
+     *
+     * Cette méthode permet de tester l'inscription
+     * d'un utilisateur.
+     *
+     * @access public
+     * @return void Ne retourne rien
+     * @throws TransportExceptionInterface
+     * @since 1.0.0
+     *
+     */
+
+    public function testRegisterUserSuccessfully(): void
+    {
+
+        // récuperer l'UID
+        $decodedToken = $this->firebaseAuthService->verifyToken($this->firebaseToken);
+        $userId = $decodedToken->sub;
+
+        // Verifier si le user existe déja
+        $repository = $this->entityManager->getRepository(className: User::class);
+        $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
+        $this->assertNull($existingUser, 'User already exists before registration');
 
 
-$this->assertNotEmpty($this->firebaseToken, 'Firebase token is not set.');
+        $response = $this->client->request(
+            method: 'POST',
+            url: self::BASE_URL . self::USER_ENDPOINT,
+            options: [
+                'json' => ['username' => 'newuser'],
+                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+            ]
+        );
 
 
-$client->request(
-'POST',
-'/api/users',
-[],
-[],
-['HTTP_Authorization' => "Bearer {$this->firebaseToken}"],
-json_encode(['username' => 'TestUser'])
-);
+        $this->assertEquals(
+            201,
+            $response->getStatusCode());
 
+        $json = json_decode($response->getContent(), true);
 
-$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $this->assertEquals(
+            'User registered successfully',
+            $json['message']);
 
+    }
 
-$data = json_decode($client->getResponse()->getContent(), true);
-var_dump($data);
+    public function testGetUserDataSuccessfully(): void
+    {
+        $response = $this->client->request(
+            method: 'GET',
+            url: self::BASE_URL . self::USER_ENDPOINT . "/me",
+            options: [
+                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+            ]
+        );
 
+        $this->assertEquals(
+            expected: 200,
+            actual: $response->getStatusCode(),
+            message: "Expected HTTP 200 OK"
+        );
 
-$this->assertArrayHasKey('userId', $data, 'User ID is missing from the response.');
+        $json = json_decode(
+            json: $response->getContent(),
+            associative: true
+        );
 
+        $this->assertArrayHasKey(
+            key: 'uid',
+            array: $json,
+            message: "Response must contain 'uid'"
+        );
 
-$this->userId = $data['userId'] ?? null;
+        $this->assertArrayHasKey(
+            key: 'username',
+            array: $json,
+            message: "Response must contain 'username'"
+        );
 
+        $this->assertArrayHasKey(
+            key: 'email',
+            array: $json,
+            message: "Response must contain 'email'"
+        );
+    }
 
-$this->assertNotNull($this->userId, "User ID should be set from the response.");
-}
+    public function testGetUserDataWithoutAuthorization(): void
+    {
+        $response = $this->client->request(
+            method: 'GET',
+            url: self::BASE_URL . self::USER_ENDPOINT . "/me",
+        );
 
-/**
-* Test de la suppression de l'utilisateur
-*/
-public function testDeleteUser(): void
-{
+        $this->assertEquals(
+            expected: 401,
+            actual: $response->getStatusCode(),
+            message: "Expected HTTP 401 Unauthorized"
+        );
+    }
 
-$this->assertNotNull($this->userId, "User ID should be set from previous test.");
-
-
-$client = static::createClient();
-
-
-$client->request(
-'DELETE',
-'/api/users/' . $this->userId,
-[],
-[],
-['HTTP_Authorization' => "Bearer {$this->firebaseToken}"]
-);
-$this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
-}
 }
