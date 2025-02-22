@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
 /**
  * Classe UserController
@@ -29,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @author Pierre SAUGUES <pierre.saugues@ynov.com>
  * @author Valentin FORTIN <valentin.fortin@ynov.com>
  */
+#[OA\Tag(name: 'User')]
 #[Route(path: '/api', name: 'user_')]
 final class UserController extends AbstractController
 {
@@ -64,6 +66,34 @@ final class UserController extends AbstractController
      * 
      * @return JsonResponse Réponse JSON
      */
+
+    #[OA\Post(
+        path: '/api/users',
+        summary: 'Créer un nouvel utilisateur',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'johndoe')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Utilisateur créé avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'User registered successfully')
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Données invalides'),
+            new OA\Response(response: 401, description: 'Authentification requise'),
+            new OA\Response(response: 409, description: 'Utilisateur déjà existant')
+        ]
+    )]
     #[Route(path: '/users', methods: ['POST'], name: 'register')]
     public function register(Request $request): JsonResponse
     {
@@ -80,50 +110,42 @@ final class UserController extends AbstractController
             );
         }
 
-        try {
-            $token = $this->firebaseAuthService->extractBearerToken(request: $request);
-            if (!$token) {
-                throw new UnauthorizedHttpException(
-                    challenge: 'Bearer',
-                    message: 'No valid token found'
-                );
-            }
-
-            // Utiliser le service pour vérifier le token
-            $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
-
-            // Extraire l'ID utilisateur
-            $userId = $decodedToken->sub;
-
-            // Vérifier si l'utilisateur existe déjà
-            $repository = $this->entityManager->getRepository(className: User::class);
-            $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
-
-            if ($existingUser) {
-                throw new ConflictHttpException(
-                    message: 'User already exists'
-                );
-            }
-
-            // Enregistrer le nouvel utilisateur dans la base de données
-            $user = new User();
-            $user->setUid(uid: $userId);
-            $user->setUsername(username: $userName);
-
-            $this->entityManager->persist(object: $user);
-            $this->entityManager->flush();
-
-            return $this->json(
-                data: ['message' => 'User registered successfully'],
-                status: Response::HTTP_CREATED
-            );
-        } catch (Exception $exception) {
+        $token = $this->firebaseAuthService->extractBearerToken(request: $request);
+        if (!$token) {
             throw new UnauthorizedHttpException(
                 challenge: 'Bearer',
-                message: 'Token decoding failed',
-                previous: $exception
+                message: 'No valid token found'
             );
         }
+
+        // Utiliser le service pour vérifier le token
+        $decodedToken = $this->firebaseAuthService->verifyToken(token: $token);
+
+        // Extraire l'ID utilisateur
+        $userId = $decodedToken->sub;
+
+        // Vérifier si l'utilisateur existe déjà
+        $repository = $this->entityManager->getRepository(className: User::class);
+        $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
+
+        if ($existingUser) {
+            throw new ConflictHttpException(
+                message: 'User already exists'
+            );
+        }
+
+        // Enregistrer le nouvel utilisateur dans la base de données
+        $user = new User();
+        $user->setUid(uid: $userId);
+        $user->setUsername(username: $userName);
+
+        $this->entityManager->persist(object: $user);
+        $this->entityManager->flush();
+
+        return $this->json(
+            data: ['message' => 'User registered successfully'],
+            status: Response::HTTP_CREATED
+        );
     }
 
     /**
@@ -139,6 +161,25 @@ final class UserController extends AbstractController
      * 
      * @return JsonResponse Réponse JSON
      */
+    #[OA\Get(
+        path: '/api/users/me',
+        summary: 'Obtenir les informations de l\'utilisateur connecté',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Détails de l\'utilisateur',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'uid', type: 'string', example: 'NKMbW78AGegabwXsEbmB1hCCOOr1'),
+                        new OA\Property(property: 'username', type: 'string', example: 'TestUser'),
+                        new OA\Property(property: 'email', type: 'string', example: 'test@test.com')
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Authentification requise'),
+            new OA\Response(response: 404, description: 'Utilisateur non trouvé')
+        ]
+    )]
     #[Route(path: '/users/me', methods: ['GET'], name: 'me')]
     public function me(Request $request): JsonResponse
     {

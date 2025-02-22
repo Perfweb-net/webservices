@@ -7,7 +7,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Attribute\Groups;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(title: 'Answer', description: 'Answer entity')]
 #[ORM\Entity(repositoryClass: AnswerRepository::class)]
 class Answer
 {
@@ -20,11 +22,11 @@ class Answer
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'The title is required')]
     #[Assert\Length(max: 255, maxMessage: 'The title must be less than {{ limit }} characters')]
-    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'answer:write' , 'question:write'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::BOOLEAN)]
-    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'answer:write', 'question:write'])]
     private ?bool $isCorrect = null;
 
     #[ORM\ManyToOne(inversedBy: 'answers')]

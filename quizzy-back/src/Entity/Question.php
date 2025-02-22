@@ -3,14 +3,18 @@
 namespace App\Entity;
 
 use App\Repository\QuestionRepository;
-use App\Validator\AtLeastOneCorrectAnswer;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use InvalidArgumentException;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    title: 'Question', 
+    description: 'Question entity',
+    
+)]
 #[ORM\Entity(repositoryClass: QuestionRepository::class)]
 class Question
 {
@@ -26,7 +30,7 @@ class Question
         max: 255,
         maxMessage: 'The title must be less than {{ limit }} characters'
     )]
-    #[Groups(groups: ['quiz:read', 'question:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'question:write'])]
     private ?string $title = null;
 
     #[ORM\ManyToOne(inversedBy: 'questions')]
@@ -35,7 +39,7 @@ class Question
     private ?Quiz $quiz = null;
 
     #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]
-    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read'])]
+    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'question:write'])]
     private Collection $answers;
 
     public function __construct()
