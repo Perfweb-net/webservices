@@ -109,4 +109,57 @@ class SocketController extends AbstractController
 
         return new JsonResponse(['message' => 'Stream started for join'], Response::HTTP_OK);
     }
+
+    #[Route('/{id}/next-question', name: 'execution_next_question', methods: ['GET'])]
+    public function nextQuestion(string $id, MercureService $mercureService): JsonResponse
+    {
+        $nextQuestion = "Question suivante pour l'exécution $id"; // À récupérer dynamiquement, peut-être d'une base de données
+        $nextQuestionData = [
+            'question' => $nextQuestion,
+            'questionId' => uniqid(),
+        ];
+
+        $participantsCount = $mercureService->getParticipantsCount();
+
+        $statusData = [
+            'status' => 'waiting',
+            'participants' => $participantsCount,
+        ];
+
+        $updateQuestion = new Update(
+            topics: ["/executions/$id"],
+            data: json_encode(['event' => 'nextQuestion', 'data' => $nextQuestionData]),
+            private: false
+        );
+        $this->mercureHub->publish($updateQuestion);
+
+        // Publier le statut mis à jour (avec le nombre de participants)
+        $updateStatus = new Update(
+            topics: ["/executions/$id"],
+            data: json_encode(['event' => 'status', 'data' => $statusData]),
+            private: false
+        );
+        $this->mercureHub->publish($updateStatus);
+
+        // Notifier l'hôte que la question suivante a été envoyée
+        $updateNotificationHost = new Update(
+            topics: ["/executions/$id/host"],
+            data: json_encode(['event' => 'nextQuestionNotification', 'data' => $nextQuestionData]),
+            private: false
+        );
+        $this->mercureHub->publish($updateNotificationHost);
+
+        // Notification aux participants
+        $questionNotification = [
+            'message' => "La question suivante est maintenant disponible !",
+        ];
+        $updateQuestionNotification = new Update(
+            topics: ["/executions/$id"],
+            data: json_encode(['event' => 'questionNotification', 'data' => $questionNotification]),
+            private: false
+        );
+        $this->mercureHub->publish($updateQuestionNotification);
+
+        return new JsonResponse(['message' => 'Next question broadcasted'], Response::HTTP_OK);
+    }
 }
