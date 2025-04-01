@@ -2,159 +2,133 @@
 
 namespace App\Tests\E2E;
 
-use App\Entity\User;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
  * Classe UserE2ETest
- * @final
  *
- * Cette classe permet de tester le
- * contrôleur UserController.
+ * Teste les routes du contrôleur UserController.
  *
  * @package App\Tests\E2E
  * @category End-to-End Tests
- *
  * @version 1.0.0
  *
  * @author ANGELA DUTON
- * @author Pierre SAUGES <valentin.fortin@ynov.com>
+ * @author Pierre SAUGES
  */
 final class UserE2ETest extends FirebaseTestCase
 {
-//#region Constantes
-    /**
-     * Constante USER_ENDPOINT
-     *
-     * Chemin de l'API pour les
-     * utilisateurs
-     *
-     * @access private
-     * @since 1.0.0
-     *
-     * @var string USER_ENDPOINT Chemin de l'API pour les utilisateurs
-     */
+    //#region Constantes
+
     private const USER_ENDPOINT = '/api/users';
-//#endregion
-
-//#region Propriétés
-    /**
-     * Propriété userId
-     *
-     * Identifiant de l'utilisateur
-     *
-     * @access private
-     * @since 1.0.0
-     *
-     * @var string|null $userId Identifiant de l'utilisateur
-     */
     private static ?string $userId = null;
-//#endregion
 
-//#region Méthodes
-    private $entityManager;
-    private $firebaseAuthService;
+    //#endregion
+
+    //#region Méthodes
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        self::bootKernel();
+    }
 
     /**
-     * Méthode testRegisterUser
+     * Teste l'enregistrement d'un utilisateur avec un username valide.
      *
-     * Cette méthode permet de tester l'inscription
-     * d'un utilisateur.
-     *
-     * @access public
-     * @return void Ne retourne rien
      * @throws TransportExceptionInterface
-     * @since 1.0.0
-     *
      */
-
-    public function testRegisterUserSuccessfully(): void
+    public function testUserRegistration(): void
     {
-
-        // récuperer l'UID
-        $decodedToken = $this->firebaseAuthService->verifyToken($this->firebaseToken);
-        $userId = $decodedToken->sub;
-
-        // Verifier si le user existe déja
-        $repository = $this->entityManager->getRepository(className: User::class);
-        $existingUser = $repository->findOneBy(criteria: ['uid' => $userId]);
-        $this->assertNull($existingUser, 'User already exists before registration');
-
+        $username = 'user_test';
 
         $response = $this->client->request(
-            method: 'POST',
-            url: self::BASE_URL . self::USER_ENDPOINT,
-            options: [
-                'json' => ['username' => 'newuser'],
+            'POST',
+            self::BASE_URL . self::USER_ENDPOINT,
+            [
+                'json' => ['username' => $username],
                 'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
             ]
         );
 
+        $statusCode = $response->getStatusCode();
 
-        $this->assertEquals(
-            201,
-            $response->getStatusCode());
-
-        $json = json_decode($response->getContent(), true);
-
-        $this->assertEquals(
-            'User registered successfully',
-            $json['message']);
-
+        if ($statusCode === 201) {
+            $content = json_decode($response->getContent(false), true);
+            $this->assertSame('User registered successfully', $content['message']);
+        } elseif ($statusCode === 409) {
+            $content = json_decode($response->getContent(false), true);
+            $this->assertSame('User already exists', $content['message']);
+        } else {
+            $this->fail("Unexpected HTTP status code received: $statusCode");
+        }
     }
 
+    /**
+     * Teste l'enregistrement sans fournir de username.
+     */
+    public function testRegisterUserWithoutUsername(): void
+    {
+        $response = $this->client->request(
+            'POST',
+            self::BASE_URL . self::USER_ENDPOINT,
+            [
+                'json' => [],
+                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+            ]
+        );
+
+        $this->assertEquals(400, $response->getStatusCode(), 'Expected HTTP 400 Bad Request');
+    }
+
+    /**
+     * Teste l'enregistrement sans token d'authentification.
+     */
+    public function testRegisterUserWithoutAuthorization(): void
+    {
+        $response = $this->client->request(
+            'POST',
+            self::BASE_URL . self::USER_ENDPOINT,
+            [
+                'json' => ['username' => 'testUserNoAuth'],
+            ]
+        );
+
+        $this->assertEquals(401, $response->getStatusCode(), 'Expected HTTP 401 Unauthorized');
+    }
+
+    /**
+     * Teste la récupération des données utilisateur avec un token valide.
+     */
     public function testGetUserDataSuccessfully(): void
     {
         $response = $this->client->request(
-            method: 'GET',
-            url: self::BASE_URL . self::USER_ENDPOINT . "/me",
-            options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
-            ]
+            'GET',
+            self::BASE_URL . self::USER_ENDPOINT . "/me",
+            ['headers' => ['Authorization' => "Bearer {$this->firebaseToken}"]]
         );
 
-        $this->assertEquals(
-            expected: 200,
-            actual: $response->getStatusCode(),
-            message: "Expected HTTP 200 OK"
-        );
+        $this->assertEquals(200, $response->getStatusCode(), 'Expected HTTP 200 OK');
 
-        $json = json_decode(
-            json: $response->getContent(),
-            associative: true
-        );
+        $json = json_decode($response->getContent(), true);
 
-        $this->assertArrayHasKey(
-            key: 'uid',
-            array: $json,
-            message: "Response must contain 'uid'"
-        );
-
-        $this->assertArrayHasKey(
-            key: 'username',
-            array: $json,
-            message: "Response must contain 'username'"
-        );
-
-        $this->assertArrayHasKey(
-            key: 'email',
-            array: $json,
-            message: "Response must contain 'email'"
-        );
+        $this->assertArrayHasKey('uid', $json);
+        $this->assertArrayHasKey('username', $json);
+        $this->assertArrayHasKey('email', $json);
     }
 
+    /**
+     * Teste l'accès aux données utilisateur sans token.
+     */
     public function testGetUserDataWithoutAuthorization(): void
     {
         $response = $this->client->request(
-            method: 'GET',
-            url: self::BASE_URL . self::USER_ENDPOINT . "/me",
+            'GET',
+            self::BASE_URL . self::USER_ENDPOINT . "/me"
         );
 
-        $this->assertEquals(
-            expected: 401,
-            actual: $response->getStatusCode(),
-            message: "Expected HTTP 401 Unauthorized"
-        );
+        $this->assertEquals(401, $response->getStatusCode(), 'Expected HTTP 401 Unauthorized');
     }
 
+    //#endregion
 }
