@@ -1,0 +1,20 @@
+@startuml
+participant "Client (Hôte)" as Hote
+participant "Client (Joueur)" as Joueur
+participant "Serveur" as Serveur
+
+== L'hôte démarre l'exécution ==
+Hote -> Serveur: host { executionId }
+Serveur -> Hote: hostDetails { titreQuiz }
+Serveur -> Tous: status { statut: 'en attente', participants: <nb> }
+
+== Un joueur rejoint la partie ==
+Joueur -> Serveur: join { executionId }
+Serveur -> Joueur: joinDetails { titreQuiz }
+Serveur -> Tous: status { statut: 'en attente', participants: <nb> }
+
+== L'hôte passe à la question suivante ==
+Hote -> Serveur: nextQuestion { executionId }
+Serveur -> Tous: status { statut: 'démarré', participants: <nb> }
+Serveur -> Tous: newQuestion { question, reponses }
+@enduml
