@@ -42,9 +42,16 @@ class Question
     #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'question:write'])]
     private Collection $answers;
 
+    /**
+     * @var Collection<int, Execution>
+     */
+    #[ORM\OneToMany(targetEntity: Execution::class, mappedBy: 'question')]
+    private Collection $executions;
+
     public function __construct()
     {
         $this->answers = new ArrayCollection();
+        $this->executions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -121,5 +128,35 @@ class Question
         $correctAnswers = $this->answers->filter(p: fn(Answer $answer): bool|null => $answer->isCorrect());
 
         return $correctAnswers->count() === 1;
+    }
+
+    /**
+     * @return Collection<int, Execution>
+     */
+    public function getExecutions(): Collection
+    {
+        return $this->executions;
+    }
+
+    public function addExecution(Execution $execution): static
+    {
+        if (!$this->executions->contains($execution)) {
+            $this->executions->add($execution);
+            $execution->setQuestion($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExecution(Execution $execution): static
+    {
+        if ($this->executions->removeElement($execution)) {
+            // set the owning side to null (unless already changed)
+            if ($execution->getQuestion() === $this) {
+                $execution->setQuestion(null);
+            }
+        }
+
+        return $this;
     }
 }

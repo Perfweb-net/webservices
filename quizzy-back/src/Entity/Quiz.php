@@ -50,9 +50,16 @@ class Quiz
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'uid', nullable: false)]
     private ?User $owner = null;
 
+    /**
+     * @var Collection<int, Execution>
+     */
+    #[ORM\OneToMany(targetEntity: Execution::class, mappedBy: 'quiz')]
+    private Collection $executions;
+
     public function __construct()
     {
         $this->questions = new ArrayCollection();
+        $this->executions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -139,5 +146,35 @@ class Quiz
         }
 
         return true;
+    }
+
+    /**
+     * @return Collection<int, Execution>
+     */
+    public function getExecutions(): Collection
+    {
+        return $this->executions;
+    }
+
+    public function addExecution(Execution $execution): static
+    {
+        if (!$this->executions->contains($execution)) {
+            $this->executions->add($execution);
+            $execution->setQuiz($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExecution(Execution $execution): static
+    {
+        if ($this->executions->removeElement($execution)) {
+            // set the owning side to null (unless already changed)
+            if ($execution->getQuiz() === $this) {
+                $execution->setQuiz(null);
+            }
+        }
+
+        return $this;
     }
 }

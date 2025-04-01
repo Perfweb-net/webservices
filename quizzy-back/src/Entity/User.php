@@ -23,9 +23,16 @@ class User
     #[ORM\OneToMany(targetEntity: Quiz::class, mappedBy: 'owner', orphanRemoval: true)]
     private Collection $quizzes;
 
+    /**
+     * @var Collection<int, Execution>
+     */
+    #[ORM\ManyToMany(targetEntity: Execution::class, mappedBy: 'participants')]
+    private Collection $executions;
+
     public function __construct()
     {
         $this->quizzes = new ArrayCollection();
+        $this->executions = new ArrayCollection();
     }
 
     public function getUid(): ?string
@@ -77,6 +84,33 @@ class User
             if ($quiz->getOwner() === $this) {
                 $quiz->setOwner(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Execution>
+     */
+    public function getExecutions(): Collection
+    {
+        return $this->executions;
+    }
+
+    public function addExecution(Execution $execution): static
+    {
+        if (!$this->executions->contains($execution)) {
+            $this->executions->add($execution);
+            $execution->addParticipant($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExecution(Execution $execution): static
+    {
+        if ($this->executions->removeElement($execution)) {
+            $execution->removeParticipant($this);
         }
 
         return $this;
