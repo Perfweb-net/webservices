@@ -176,7 +176,6 @@ final class QuizController extends AbstractController
         response: 200,
         description: 'List of user quizzes',
         content: new OA\JsonContent(
-            type: 'object',
             properties: [
                 new OA\Property(
                     property: 'data',
@@ -269,7 +268,8 @@ final class QuizController extends AbstractController
                         ]
                     )
                 )
-            ]
+            ],
+            type: 'object'
         )
     )]
     #[Route(name: 'me_get_all', methods: ['GET'])]
