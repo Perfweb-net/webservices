@@ -41,6 +41,9 @@ class Execution
      * @var Collection<int, User> $participants Liste des participants
      */
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'executions')]
+    #[ORM\JoinTable(name: 'execution_participants')]
+    #[ORM\JoinColumn(name: 'execution_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'user_uid', referencedColumnName: 'uid')]
     private Collection $participants;
 
     /**
