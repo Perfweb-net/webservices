@@ -189,9 +189,9 @@ class Execution
      * @access public
      * @since 1.0.0
      * 
-     * @return Quiz|null Quiz associé
+     * @return Quiz Quiz associé
      */
-    public function getQuiz(): ?Quiz
+    public function getQuiz(): Quiz
     {
         return $this->quiz;
     }

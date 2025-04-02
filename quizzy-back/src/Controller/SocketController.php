@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\Execution;
+use App\Entity\User;
 use App\Service\MercureService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,34 +17,40 @@ use Symfony\Component\HttpFoundation\Response;
 class SocketController extends AbstractController
 {
     public function __construct(
-        private readonly HubInterface $mercureHub
+        private readonly HubInterface $mercureHub,
+        private readonly MercureService $mercureService,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly QuizRepository $quizRepository,
     ) {
     }
 
     #[Route('/{id}/host', name: 'execution_host', methods: ['GET'])]
-    public function hostExecution(string $id, MercureService $mercureService): JsonResponse
+    public function hostExecution(Execution $execution): JsonResponse
     {
-        $quizTitle = "Quiz for execution $id";
+        $quiz = $execution->getQuiz();
+        $executionId = $execution->getId();
+        $quizTitle = $quiz->getTitle();
+
         $quizData = [
             'quizTitle' => $quizTitle,
         ];
 
-        $participantsCount = $mercureService->getParticipantsCount();
+        $participantsCount = $this->mercureService->getParticipantsCount();
 
         $statusData = [
-            'status' => 'waiting',
-            'participants' => $participantsCount,
+            'status' => $execution->getStatus(),
+            'participants' => $execution->getParticipants()->count(),
         ];
 
         $update = new Update(
-            topics: ["/executions/$id/host"],
+            topics: ["/executions/$executionId/host"],
             data: json_encode(['event' => 'hostDetails', 'data' => $quizData]),
             private: false
         );
         $this->mercureHub->publish($update);
 
         $update = new Update(
-            topics: ["/executions/$id/host"],
+            topics: ["/executions/$executionId/host"],
             data: json_encode(['event' => 'status', 'data' => $statusData]),
             private: false
         );
@@ -52,39 +60,42 @@ class SocketController extends AbstractController
     }
 
     #[Route('/{id}/join', name: 'execution_join', methods: ['GET'])]
-    public function joinExecution(string $id, MercureService $mercureService): JsonResponse
+    public function joinExecution(Execution $execution): JsonResponse
     {
-        $quizTitle = "Quiz for execution $id"; // À récupérer dynamiquement
+        $quiz = $execution->getQuiz();
+        $executionId = $execution->getId();
+        $quizTitle = $quiz->getTitle();
+        $user = $this->getUser();
 
-        $mercureService->addParticipant($id);
+        if ($user instanceof User) {
+            $execution->addParticipant($user);
+        }
 
         $joinData = [
             'quizTitle' => $quizTitle,
         ];
 
-        $participantsCount = $mercureService->getParticipantsCount();
-
         $statusData = [
-            'status' => 'waiting',
-            'participants' => $participantsCount,
+            'status' => $execution->getStatus(),
+            'participants' => $execution->getParticipants()->count(),
         ];
 
         $update = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'joinDetails', 'data' => $joinData]),
             private: false
         );
         $this->mercureHub->publish($update);
 
         $update = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'status', 'data' => $statusData]),
             private: false
         );
         $this->mercureHub->publish($update);
 
         $updateHost = new Update(
-            topics: ["/executions/$id/host"],
+            topics: ["/executions/$executionId/host"],
             data: json_encode(['event' => 'status', 'data' => $statusData]),
             private: false
         );
@@ -94,14 +105,14 @@ class SocketController extends AbstractController
             'message' => "Un participant vient de rejoindre le quiz !",
         ];
         $updateNotification = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'joinNotification', 'data' => $joinNotification]),
             private: false
         );
         $this->mercureHub->publish($updateNotification);
 
         $updateNotificationHost = new Update(
-            topics: ["/executions/$id/host"],
+            topics: ["/executions/$executionId/host"],
             data: json_encode(['event' => 'joinNotification', 'data' => $joinNotification]),
             private: false
         );
@@ -111,23 +122,43 @@ class SocketController extends AbstractController
     }
 
     #[Route('/{id}/next-question', name: 'execution_next_question', methods: ['GET'])]
-    public function nextQuestion(string $id, MercureService $mercureService): JsonResponse
+    public function nextQuestion(Execution $execution): JsonResponse
     {
-        $nextQuestion = "Question suivante pour l'exécution $id"; // À récupérer dynamiquement, peut-être d'une base de données
+        $executionId = $execution->getId();
+        $quiz = $execution->getQuiz();
+        $questions = $quiz->getQuestions();
+        $currentQuestion = $execution->getQuestion();
+
+        $currentIndex = array_search($currentQuestion, $questions, true);
+
+        if ($currentIndex !== false && isset($questions[$currentIndex + 1])) {
+            $nextQuestion = $questions[$currentIndex + 1];
+        } else {
+            $nextQuestion = null;
+        }
+
+        if ($nextQuestion === null) {
+            $updateQuestion = new Update(
+                topics: ["/executions/$executionId"],
+                data: json_encode(['event' => 'nextQuestion', 'data' => "no next question"]),
+                private: false
+            );
+            $this->mercureHub->publish($updateQuestion);
+            return new JsonResponse(['message' => 'No next question'], Response::HTTP_OK);
+        }
+
         $nextQuestionData = [
-            'question' => $nextQuestion,
-            'questionId' => uniqid(),
+            'question' => $nextQuestion->getTitle(),
+            'questionId' => $nextQuestion->getId(),
         ];
 
-        $participantsCount = $mercureService->getParticipantsCount();
-
         $statusData = [
-            'status' => 'waiting',
-            'participants' => $participantsCount,
+            'status' => $execution->getStatus(),
+            'participants' => $execution->getParticipants()->count(),
         ];
 
         $updateQuestion = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'nextQuestion', 'data' => $nextQuestionData]),
             private: false
         );
@@ -135,7 +166,7 @@ class SocketController extends AbstractController
 
         // Publier le statut mis à jour (avec le nombre de participants)
         $updateStatus = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'status', 'data' => $statusData]),
             private: false
         );
@@ -143,18 +174,17 @@ class SocketController extends AbstractController
 
         // Notifier l'hôte que la question suivante a été envoyée
         $updateNotificationHost = new Update(
-            topics: ["/executions/$id/host"],
+            topics: ["/executions/$executionId/host"],
             data: json_encode(['event' => 'nextQuestionNotification', 'data' => $nextQuestionData]),
             private: false
         );
         $this->mercureHub->publish($updateNotificationHost);
 
-        // Notification aux participants
         $questionNotification = [
             'message' => "La question suivante est maintenant disponible !",
         ];
         $updateQuestionNotification = new Update(
-            topics: ["/executions/$id"],
+            topics: ["/executions/$executionId"],
             data: json_encode(['event' => 'questionNotification', 'data' => $questionNotification]),
             private: false
         );

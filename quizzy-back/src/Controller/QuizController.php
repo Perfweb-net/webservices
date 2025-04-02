@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Execution;
 use App\Entity\Quiz;
+use App\Enum\ExecutionStatus;
 use App\Service\FirebaseAuthService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -567,10 +569,15 @@ final class QuizController extends AbstractController
         Request $request,
         Quiz $quiz,
     ): JsonResponse {
-        $executionId = substr(md5(uniqid()), 0, 6);
+        $execution = new Execution();
+        $execution->setQuiz($quiz);
+        $execution->setStatus(ExecutionStatus::STARTED);
+        $this->entityManager->persist($execution);
+        $this->entityManager->flush();
+        $quiz->addExecution($execution);
 
-        return new JsonResponse(['Location'=>"/execution/{$executionId}"], Response::HTTP_CREATED, [
-            'Location' => "/execution/{$executionId}"
+        return new JsonResponse(['Location'=>"/execution/{$execution->getId()}"], Response::HTTP_CREATED, [
+            'Location' => "/execution/{$execution->getId()}"
         ]);
     }
 }

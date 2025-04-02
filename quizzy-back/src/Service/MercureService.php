@@ -6,7 +6,7 @@ class MercureService
     private $connectedParticipants = 0;
 
 // Ajouter un participant
-    public function addParticipant()
+    public function addParticipant(User $user)
     {
         $this->connectedParticipants++;
     }
