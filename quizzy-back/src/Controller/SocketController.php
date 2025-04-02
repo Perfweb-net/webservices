@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/executions')]
 class SocketController extends AbstractController
@@ -29,9 +30,10 @@ class SocketController extends AbstractController
         private readonly QuizRepository         $quizRepository,
         private readonly FirebaseAuthService    $firebaseAuthService,
         private readonly QuestionRepository     $questionRepository,
+        private readonly SerializerInterface    $serializer,
     ) {}
 
-    #[Route('/{id}/host', name: 'execution_host', methods: ['GET'])]
+    #[Route('/{execution}/host', name: 'execution_host', methods: ['GET'])]
     public function hostExecution(Execution $execution): JsonResponse
     {
         $quiz = $execution->getQuiz();
@@ -64,7 +66,7 @@ class SocketController extends AbstractController
         return new JsonResponse(['message' => 'Stream started for host'], Response::HTTP_OK);
     }
 
-    #[Route('/{id}/join', name: 'execution_join', methods: ['GET'])]
+    #[Route('/{execution}/join', name: 'execution_join', methods: ['GET'])]
     public function joinExecution(Execution $execution, Request $request): JsonResponse
     {
         $quiz = $execution->getQuiz();
@@ -127,7 +129,7 @@ class SocketController extends AbstractController
         return new JsonResponse(['message' => 'Stream started for join'], Response::HTTP_OK);
     }
 
-    #[Route('/{id}/next-question', name: 'execution_next_question', methods: ['GET'])]
+    #[Route('/{execution}/next-question', name: 'execution_next_question', methods: ['GET'])]
     public function nextQuestion(Execution $execution): JsonResponse
     {
         $executionId = $execution->getId();
@@ -162,7 +164,11 @@ class SocketController extends AbstractController
         $nextQuestionData = [
             'question' => $nextQuestion->getTitle(),
             'questionId' => $nextQuestion->getId(),
-            'answers' => $nextQuestion->getAnswers(),
+            'answers' => $this->serializer->serialize(
+                data: $nextQuestion->getAnswers(), 
+                format: 'json', 
+                context: ['groups' => 'answer:read']
+            ),
         ];
 
         $statusData = [
