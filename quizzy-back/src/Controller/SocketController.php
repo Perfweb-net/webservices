@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Execution;
 use App\Entity\Question;
 use App\Entity\User;
+use App\Enum\ExecutionStatus;
 use App\Repository\QuestionRepository;
 use App\Repository\QuizRepository;
 use App\Service\FirebaseAuthService;
@@ -72,6 +73,7 @@ class SocketController extends AbstractController
         $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
         $execution->addParticipant($user);
+        $execution->setStatus(ExecutionStatus::WAITING);
         $this->entityManager->persist($execution);
         $this->entityManager->flush();
 
@@ -151,6 +153,9 @@ class SocketController extends AbstractController
                 private: false
             );
             $this->mercureHub->publish($updateQuestion);
+            $execution->setStatus(ExecutionStatus::ENDED);
+            $this->entityManager->persist($execution);
+            $this->entityManager->flush();
             return new JsonResponse(['message' => 'No next question'], Response::HTTP_OK);
         }
 
