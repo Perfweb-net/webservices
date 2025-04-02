@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Execution;
 use App\Entity\User;
 use App\Repository\QuizRepository;
+use App\Service\FirebaseAuthService;
 use App\Service\MercureService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,12 +20,12 @@ use Symfony\Component\HttpFoundation\Response;
 class SocketController extends AbstractController
 {
     public function __construct(
-        private readonly HubInterface $mercureHub,
-        private readonly MercureService $mercureService,
+        private readonly HubInterface           $mercureHub,
+        private readonly MercureService         $mercureService,
         private readonly EntityManagerInterface $entityManager,
-        private readonly QuizRepository $quizRepository,
-    ) {
-    }
+        private readonly QuizRepository         $quizRepository,
+        private readonly FirebaseAuthService    $firebaseAuthService,
+    ) {}
 
     #[Route('/{id}/host', name: 'execution_host', methods: ['GET'])]
     public function hostExecution(Execution $execution): JsonResponse
@@ -36,8 +37,6 @@ class SocketController extends AbstractController
         $quizData = [
             'quizTitle' => $quizTitle,
         ];
-
-        $participantsCount = $this->mercureService->getParticipantsCount();
 
         $statusData = [
             'status' => $execution->getStatus(),
@@ -62,16 +61,16 @@ class SocketController extends AbstractController
     }
 
     #[Route('/{id}/join', name: 'execution_join', methods: ['GET'])]
-    public function joinExecution(Execution $execution): JsonResponse
+    public function joinExecution(Execution $execution, Request $request): JsonResponse
     {
         $quiz = $execution->getQuiz();
         $executionId = $execution->getId();
         $quizTitle = $quiz->getTitle();
-        $user = $this->getUser();
+        $user = $this->firebaseAuthService->getUserFromToken(request: $request);
 
-        if ($user instanceof User) {
-            $execution->addParticipant($user);
-        }
+        $execution->addParticipant($user);
+        $this->entityManager->persist($execution);
+        $this->entityManager->flush();
 
         $joinData = [
             'quizTitle' => $quizTitle,
@@ -131,7 +130,7 @@ class SocketController extends AbstractController
         $questions = $quiz->getQuestions();
         $currentQuestion = $execution->getQuestion();
 
-        $currentIndex = array_search($currentQuestion, $questions, true);
+        $currentIndex = array_search($currentQuestion, (array)$questions, true);
 
         if ($currentIndex !== false && isset($questions[$currentIndex + 1])) {
             $nextQuestion = $questions[$currentIndex + 1];
@@ -191,6 +190,10 @@ class SocketController extends AbstractController
             private: false
         );
         $this->mercureHub->publish($updateQuestionNotification);
+
+        $execution->setQuestion($nextQuestion);
+        $this->entityManager->persist($execution);
+        $this->entityManager->flush();
 
         return new JsonResponse(['message' => 'Next question broadcasted'], Response::HTTP_OK);
     }
