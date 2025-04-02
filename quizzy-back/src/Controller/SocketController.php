@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Execution;
+use App\Entity\Question;
 use App\Entity\User;
+use App\Repository\QuestionRepository;
 use App\Repository\QuizRepository;
 use App\Service\FirebaseAuthService;
 use App\Service\MercureService;
@@ -25,6 +27,7 @@ class SocketController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly QuizRepository         $quizRepository,
         private readonly FirebaseAuthService    $firebaseAuthService,
+        private readonly QuestionRepository     $questionRepository,
     ) {}
 
     #[Route('/{id}/host', name: 'execution_host', methods: ['GET'])]
@@ -127,13 +130,16 @@ class SocketController extends AbstractController
     {
         $executionId = $execution->getId();
         $quiz = $execution->getQuiz();
-        $questions = $quiz->getQuestions();
+        $questions = iterator_to_array($quiz->getQuestions());;
         $currentQuestion = $execution->getQuestion();
 
-        $currentIndex = array_search($currentQuestion, (array)$questions, true);
+        $questionIds = array_map(fn($q) => $q->getId(), $questions);
+
+        $currentIndex = array_search($currentQuestion->getId(), $questionIds, true);
 
         if ($currentIndex !== false && isset($questions[$currentIndex + 1])) {
             $nextQuestion = $questions[$currentIndex + 1];
+            $nextQuestion = $this->questionRepository->find($nextQuestion->getId());
         } else {
             $nextQuestion = null;
         }

@@ -572,6 +572,7 @@ final class QuizController extends AbstractController
         $execution = new Execution();
         $execution->setQuiz($quiz);
         $execution->setStatus(ExecutionStatus::STARTED);
+        $execution->setQuestion($quiz->getQuestions()[0]);
         $this->entityManager->persist($execution);
         $this->entityManager->flush();
         $quiz->addExecution($execution);
