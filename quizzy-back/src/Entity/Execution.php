@@ -8,7 +8,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: ExecutionRepository::class)]
 class Execution
@@ -26,9 +29,10 @@ class Execution
      * @var int|null $id Identifiant unique
      */
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    #[ORM\Column(name: 'id', type: UuidType::NAME, unique: true)]
+    private ?Uuid $id = null;
 
     /**
      * Propriété participants
@@ -119,9 +123,9 @@ class Execution
      * @access public
      * @since 1.0.0
      * 
-     * @return int|null Identifiant unique
+     * @return Uuid|null Identifiant unique
      */
-    public function getId(): ?int
+    public function getId(): ?Uuid
     {
         return $this->id;
     }
