@@ -78,9 +78,11 @@ class SocketController extends AbstractController
         $execution->setStatus(ExecutionStatus::WAITING);
         $this->entityManager->persist($execution);
         $this->entityManager->flush();
+        $question = $execution->getQuestion();
 
         $joinData = [
             'quizTitle' => $quizTitle,
+            'answers' => $question->getAnswers()->toArray(),
         ];
 
         $statusData = [
@@ -164,11 +166,7 @@ class SocketController extends AbstractController
         $nextQuestionData = [
             'question' => $nextQuestion->getTitle(),
             'questionId' => $nextQuestion->getId(),
-            'answers' => $this->serializer->serialize(
-                data: $nextQuestion->getAnswers(), 
-                format: 'json', 
-                context: ['groups' => 'answer:read']
-            ),
+            'answers' => $nextQuestion->getAnswers()->toArray(),
         ];
 
         $statusData = [
