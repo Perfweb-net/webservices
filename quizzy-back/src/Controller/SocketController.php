@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Execution;
 use App\Entity\User;
+use App\Repository\QuizRepository;
 use App\Service\MercureService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
