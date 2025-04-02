@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250401100754 extends AbstractMigration
+final class Version20250402082408 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -22,12 +22,14 @@ final class Version20250401100754 extends AbstractMigration
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('CREATE TABLE answer (id SERIAL NOT NULL, question_id INT NOT NULL, title VARCHAR(255) NOT NULL, is_correct BOOLEAN NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_DADD4A251E27F6BF ON answer (question_id)');
-        $this->addSql('CREATE TABLE execution (id SERIAL NOT NULL, quiz_id INT DEFAULT NULL, question_id INT DEFAULT NULL, status VARCHAR(20) NOT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE execution (id UUID NOT NULL, quiz_id INT DEFAULT NULL, question_id INT DEFAULT NULL, status VARCHAR(20) NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_2A0D73A853CD175 ON execution (quiz_id)');
         $this->addSql('CREATE INDEX IDX_2A0D73A1E27F6BF ON execution (question_id)');
-        $this->addSql('CREATE TABLE execution_participants (execution_id INT NOT NULL, user_uid VARCHAR(28) NOT NULL, PRIMARY KEY(execution_id, user_uid))');
+        $this->addSql('COMMENT ON COLUMN execution.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('CREATE TABLE execution_participants (execution_id UUID NOT NULL, user_uid VARCHAR(28) NOT NULL, PRIMARY KEY(execution_id, user_uid))');
         $this->addSql('CREATE INDEX IDX_CBB82F2457125544 ON execution_participants (execution_id)');
         $this->addSql('CREATE INDEX IDX_CBB82F24B88D678D ON execution_participants (user_uid)');
+        $this->addSql('COMMENT ON COLUMN execution_participants.execution_id IS \'(DC2Type:uuid)\'');
         $this->addSql('CREATE TABLE question (id SERIAL NOT NULL, quiz_id INT NOT NULL, title VARCHAR(255) NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_B6F7494E853CD175 ON question (quiz_id)');
         $this->addSql('CREATE TABLE quiz (id SERIAL NOT NULL, user_id VARCHAR(28) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NOT NULL, PRIMARY KEY(id))');
