@@ -38,8 +38,8 @@ class Question
     #[Groups(groups: ['question:read'])]
     private ?Quiz $quiz = null;
 
-    #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', orphanRemoval: true)]
-    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'question:write'])]
+    #[ORM\OneToMany(targetEntity: Answer::class, mappedBy: 'question', fetch: 'EAGER', orphanRemoval: true)]
+    #[Groups(groups: ['quiz:read', 'question:read', 'answer:read', 'question:write', "answers:read"])]
     private Collection $answers;
 
     /**

@@ -130,7 +130,7 @@ class SocketController extends AbstractController
     }
 
     #[Route('/{execution}/next-question', name: 'execution_next_question', methods: ['GET'])]
-    public function nextQuestion(Execution $execution): JsonResponse
+    public function nextQuestion(Execution $execution, SerializerInterface $serializer): JsonResponse
     {
         $executionId = $execution->getId();
         $quiz = $execution->getQuiz();
@@ -160,11 +160,10 @@ class SocketController extends AbstractController
             $this->entityManager->flush();
             return new JsonResponse(['message' => 'No next question'], Response::HTTP_OK);
         }
-
         $nextQuestionData = [
             'question' => $nextQuestion->getTitle(),
             'questionId' => $nextQuestion->getId(),
-            'answers' => $nextQuestion->getAnswers()->toArray(),
+            'answers' => $serializer->normalize($nextQuestion->getAnswers(),'json', ['groups' => ['answers:read']]),
         ];
 
         $statusData = [
@@ -177,6 +176,7 @@ class SocketController extends AbstractController
             data: json_encode(['event' => 'nextQuestion', 'data' => $nextQuestionData]),
             private: false
         );
+
         $this->mercureHub->publish($updateQuestion);
 
         // Publier le statut mis à jour (avec le nombre de participants)
