@@ -78,11 +78,9 @@ class SocketController extends AbstractController
         $execution->setStatus(ExecutionStatus::WAITING);
         $this->entityManager->persist($execution);
         $this->entityManager->flush();
-        $question = $execution->getQuestion();
 
         $joinData = [
             'quizTitle' => $quizTitle,
-            'answers' => $question->getAnswers()->toArray(),
         ];
 
         $statusData = [
