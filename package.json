@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start-front": "cd quizzy-front && npm run start-custom",
+    "start-back": "cd quizzy-back && npm run start",
+    "test-e2e": "cd quizzy-back && php bin/phpunit --testdox tests/E2E",
+    "start-back-and-test": "npm run start-back && npm run test-e2e"
+  }
+}
