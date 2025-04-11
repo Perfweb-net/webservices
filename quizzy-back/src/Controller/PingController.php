@@ -113,14 +113,14 @@ final class PingController extends AbstractController
             $databaseStatus = $connection->isConnected() ? 'OK' : 'KO';
 
             return $this->json(
-                data: ['status' => $status, 'database' => $databaseStatus],
+                data: ['status' => $status, 'details' => ['database' => $databaseStatus]],
                 status: Response::HTTP_OK
             );
         } catch (\Exception $e) {
             $logger->error("Database is not available: {$e->getMessage()}");
 
             return $this->json(
-                data: ['status' => 'KO', 'database' => 'KO'],
+                data: ['status' => 'KO', 'details' => ['database' => 'KO']],
                 status: Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
