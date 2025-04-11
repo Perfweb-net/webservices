@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/executions')]
@@ -130,7 +131,7 @@ class SocketController extends AbstractController
     }
 
     #[Route('/{execution}/next-question', name: 'execution_next_question', methods: ['GET'])]
-    public function nextQuestion(Execution $execution, SerializerInterface $serializer): JsonResponse
+    public function nextQuestion(Execution $execution, NormalizerInterface $normalizer): JsonResponse
     {
         $executionId = $execution->getId();
         $quiz = $execution->getQuiz();
@@ -163,7 +164,7 @@ class SocketController extends AbstractController
         $nextQuestionData = [
             'question' => $nextQuestion->getTitle(),
             'questionId' => $nextQuestion->getId(),
-            'answers' => $serializer->normalize($nextQuestion->getAnswers(),'json', ['groups' => ['answers:read']]),
+            'answers' => $normalizer->normalize($nextQuestion->getAnswers(),'json', ['groups' => ['answers:read']]),
         ];
 
         $statusData = [
