@@ -2,6 +2,7 @@
 
 namespace App\Tests\E2E;
 
+use Exception;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
@@ -19,10 +20,7 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 final class UserE2ETest extends FirebaseTestCase
 {
     //#region Constantes
-
     private const USER_ENDPOINT = '/api/users';
-    private static ?string $userId = null;
-
     //#endregion
 
     //#region Méthodes
@@ -43,24 +41,37 @@ final class UserE2ETest extends FirebaseTestCase
         $username = 'user_test';
 
         $response = $this->client->request(
-            'POST',
-            self::BASE_URL . self::USER_ENDPOINT,
-            [
+            method: 'POST',
+            url: self::BASE_URL . self::USER_ENDPOINT,
+            options: [
                 'json' => ['username' => $username],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
         $statusCode = $response->getStatusCode();
 
         if ($statusCode === 201) {
-            $content = json_decode($response->getContent(false), true);
-            $this->assertSame('User registered successfully', $content['message']);
+            $content = json_decode(
+                json: $response->getContent(throw: false), 
+                associative: true
+            );
+            $this->assertSame(
+                expected: 'User registered successfully', 
+                actual: $content['message']
+            );
         } elseif ($statusCode === 409) {
-            $content = json_decode($response->getContent(false), true);
-            $this->assertSame('User already exists', $content['message']);
+            $content = json_decode(
+                json: $response->getContent(throw: false), 
+                associative: true
+            );
+
+            $this->assertSame(
+                expected: 'User already exists', 
+                actual: $content['message']
+            );
         } else {
-            $this->fail("Unexpected HTTP status code received: $statusCode");
+            $this->fail(message: "Unexpected HTTP status code received: $statusCode");
         }
     }
 
@@ -70,15 +81,19 @@ final class UserE2ETest extends FirebaseTestCase
     public function testRegisterUserWithoutUsername(): void
     {
         $response = $this->client->request(
-            'POST',
-            self::BASE_URL . self::USER_ENDPOINT,
-            [
+            method: 'POST',
+            url: self::BASE_URL . self::USER_ENDPOINT,
+            options: [
                 'json' => [],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
-        $this->assertEquals(400, $response->getStatusCode(), 'Expected HTTP 400 Bad Request');
+        $this->assertEquals(
+            expected: 400, 
+            actual: $response->getStatusCode(), 
+            message: 'Expected HTTP 400 Bad Request'
+        );
     }
 
     /**
@@ -94,7 +109,11 @@ final class UserE2ETest extends FirebaseTestCase
             ]
         );
 
-        $this->assertEquals(401, $response->getStatusCode(), 'Expected HTTP 401 Unauthorized');
+        $this->assertEquals(
+            expected: 401, 
+            actual: $response->getStatusCode(), 
+            message: 'Expected HTTP 401 Unauthorized'
+        );
     }
 
     /**
@@ -105,7 +124,7 @@ final class UserE2ETest extends FirebaseTestCase
         $response = $this->client->request(
             'GET',
             self::BASE_URL . self::USER_ENDPOINT . "/me",
-            ['headers' => ['Authorization' => "Bearer {$this->firebaseToken}"]]
+            ['headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken]]
         );
 
         $this->assertEquals(200, $response->getStatusCode(), 'Expected HTTP 200 OK');

@@ -92,7 +92,7 @@ final class PingE2ETest extends KernelTestCase
         );
         $this->assertArrayHasKey(
             key: 'database', 
-            array: $json, 
+            array: $json['details'], 
             message: "Missing 'database' key in the response"
         );
 
@@ -104,8 +104,8 @@ final class PingE2ETest extends KernelTestCase
 
         $this->assertEquals(
             expected: 'OK', 
-            actual: $json['database'], 
-            message: "Expected database status 'OK', got '{$json['database']}'"
+            actual: $json['details']['database'], 
+            message: "Expected database status 'OK', got '{$json['details']['database']}'"
         );
     }
     //#endregion

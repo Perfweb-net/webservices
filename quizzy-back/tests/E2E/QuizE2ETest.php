@@ -2,6 +2,8 @@
 
 namespace App\Tests\E2E;
 
+use Exception;
+
 /**
  * Classe QuizE2ETest
  * @final
@@ -60,7 +62,13 @@ final class QuizE2ETest extends FirebaseTestCase
     private static ?int $questionId = null;
     //#endregion
 
-    //#region Méthodes    
+    //#region Méthodes  
+    public function setUp(): void
+    {
+        parent::setUp();
+        self::bootKernel();
+    }
+    
     /**
      * Méthode testCreateQuizSuccessfully
      * 
@@ -81,7 +89,7 @@ final class QuizE2ETest extends FirebaseTestCase
                     'title' => 'Test Quiz',
                     'description' => 'A simple test quiz'
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -161,7 +169,7 @@ final class QuizE2ETest extends FirebaseTestCase
                     'title' => '',
                     'description' => 123
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -194,7 +202,7 @@ final class QuizE2ETest extends FirebaseTestCase
             method: 'GET',
             url: self::BASE_URL . self::QUIZ_ENDPOINT . "/" . self::$quizId,
             options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer " . FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -232,7 +240,7 @@ final class QuizE2ETest extends FirebaseTestCase
             method: 'GET',
             url: self::BASE_URL . self::QUIZ_ENDPOINT . '/00',
             options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -260,7 +268,7 @@ final class QuizE2ETest extends FirebaseTestCase
             method: 'GET',
             url: self::BASE_URL . self::QUIZ_ENDPOINT,
             options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -312,7 +320,7 @@ final class QuizE2ETest extends FirebaseTestCase
                 'json' => [
                     ['op' => 'replace', 'path' => '/title', 'value' => 'Updated Quiz'],
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -348,7 +356,7 @@ final class QuizE2ETest extends FirebaseTestCase
                 'json' => [
                     ['op' => 'replace', 'path' => '/title'],
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -424,7 +432,7 @@ final class QuizE2ETest extends FirebaseTestCase
                         ['title' => 'Answer 2', 'isCorrect' => false],
                     ],
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -477,7 +485,7 @@ final class QuizE2ETest extends FirebaseTestCase
             url: self::BASE_URL . self::QUIZ_ENDPOINT . "/" . self::$quizId . "/questions",
             options: [
                 'json' => [],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer " . FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -549,7 +557,7 @@ final class QuizE2ETest extends FirebaseTestCase
             method: 'GET',
             url: self::BASE_URL . self::QUIZ_ENDPOINT . "/" . self::$quizId . "/questions/" . self::$questionId,
             options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -593,7 +601,7 @@ final class QuizE2ETest extends FirebaseTestCase
             method: 'GET',
             url: self::BASE_URL . self::QUIZ_ENDPOINT . "/" . self::$quizId . "/questions/00",
             options: [
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -664,7 +672,7 @@ final class QuizE2ETest extends FirebaseTestCase
                         ['title' => 'Answer 2', 'isCorrect' => false],
                     ],
                 ],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer ". FirebaseTestCase::$firebaseToken],
             ]
         );
 
@@ -698,7 +706,7 @@ final class QuizE2ETest extends FirebaseTestCase
             url: self::BASE_URL . self::QUIZ_ENDPOINT . "/" . self::$quizId . "/questions/" . self::$questionId,
             options: [
                 'json' => [],
-                'headers' => ['Authorization' => "Bearer {$this->firebaseToken}"],
+                'headers' => ['Authorization' => "Bearer " . FirebaseTestCase::$firebaseToken],
             ]
         );
 
